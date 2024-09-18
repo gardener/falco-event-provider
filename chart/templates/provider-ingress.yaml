@@ -1,0 +1,28 @@
+{{- if .Values.eventProvider.useIngress }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/use-port-in-redirects: "true"
+  labels:
+    app: {{ .Values.name }}
+  name: {{ .Values.name }}-ingress
+spec:
+  ingressClassName: {{ .Values.eventProvider.ingressClassName}}
+  rules:
+  - host: {{ .Values.eventProvider.ingressDomain }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: {{ .Values.name }}
+            port:
+              number: {{ .Values.eventProvider.port}}
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - {{ .Values.eventProvider.ingressDomain }}
+    secretName: tls
+{{- end }}

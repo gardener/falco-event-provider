@@ -1,0 +1,27 @@
+name: falco-event-provider
+
+eventProvider:
+  useIngress: true
+  ingressDomain:
+  ingressClassName: nginx-ingress-gardener
+  image: 
+    repositry: europe-docker.pkg.dev/gardener-project/releases/gardener/falco-event-provider
+    tag: 0.0.1
+  port: 3200
+  tlsServer: false
+  replicas: 2
+
+postgres:
+  user: gardener
+  host: falco-event-db.falco-event-storage.svc.cluster.local
+  port: 5432
+  dbname: falco
+  password:
+
+healthz:
+  port: 8000
+
+gardener:
+  accessToken:
+
+appName: falco-event-provider

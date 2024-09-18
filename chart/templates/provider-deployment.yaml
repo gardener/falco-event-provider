@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+  labels:
+    app: {{ .Values.name }}
+  name: {{ .Values.name }}
+spec:
+  progressDeadlineSeconds: 30
+  replicas: {{ .Values.eventProvider.replicas }}
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}
+        gardener.cloud/role: monitoring
+        networking.gardener.cloud/to-dns: allowed
+        resources.gardener.cloud/managed-by: gardener
+        networking.resources.gardener.cloud/to-postgres-tcp-5432: allowed
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: ingestor
+        image: {{ include "image" .Values.eventProvider.image }}
+        imagePullPolicy: Always
+        args:
+        - --config-file
+        - /etc/{{ .Values.name }}/config.yaml
+        - --postgres-password-file
+        - /etc/{{ .Values.name }}/psql/password
+      {{- if .Values.eventProvider.tlsServer }}
+        - --tls-certificate
+        - /etc/{{ .Values.name }}/tls/tls.crt
+        - --tls-key
+        - /etc/{{ .Values.name }}/tls/tls.key
+      {{- end }}
+        ports:
+        - containerPort: {{ .Values.eventProvider.port }}
+          name: web
+          protocol: TCP
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+        volumeMounts:
+        - mountPath: /etc/{{ .Values.name }}
+          name: all-volumes
+        livenessProbe:
+          failureThreshold: 1
+          httpGet:
+            path: /healthz
+            port: {{ .Values.healthz.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 2
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 65532
+        runAsGroup: 65532
+        runAsNonRoot: true
+        runAsUser: 65532
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: all-volumes
+        projected:
+          sources:
+          - secret:
+              name: token-verification-key
+              items:
+              - key: public.pem
+                path: token/public.pem
+          - secret:
+              name: {{ .Values.name }}-postgres-secret
+              items:
+              - key: password
+                path: psql/password
+          {{- if .Values.eventProvider.tlsServer }}
+          - secret:
+              name: tls-secret-provider
+              items:
+              - key: tls.key
+                path: tls/tls.key
+              - key: tls.crt
+                path: tls/tls.crt
+          {{- end }}
+          - configMap:
+              name: {{ .Values.name }}-configmap
+              items:
+              - key: config.yaml
+                path: config.yaml
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: {{ .Values.name }}
