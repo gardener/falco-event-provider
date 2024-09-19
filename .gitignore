@@ -22,6 +22,7 @@ go.work
 
 .dev
 .cache_ggshield
+/hack/tools/bin
 
 # editor and IDE paraphernalia
 .idea
