@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+ENSURE_GARDENER_MOD         := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
+GARDENER_HACK_DIR           := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/hack
 IMAGE_REPOSITORY   := europe-docker.pkg.dev/gardener-project/snapshots/${USER}/falco-event-backend
 IMAGE_TAG          := $(shell cat VERSION)
 COVERPROFILE       := test/output/coverprofile.out
@@ -29,16 +31,16 @@ deploy: release
 #################################################################
 
 TOOLS_DIR := hack/tools
-include $(TOOLS_DIR)/tools.mk
+include $(GARDENER_HACK_DIR)/tools.mk
 
 .PHONY: check
-check: $(GOIMPORTS) $(GOLANGCI_LINT)
-	go vet ./...
-	GOIMPORTS=$(GOIMPORTS) GOLANGCI_LINT=$(GOLANGCI_LINT) hack/check.sh ./cmd/... ./pkg/...
+check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM)
+	@bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/...
+	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
 
 .PHONY: format
-format: $(GOIMPORTS)
-	@GOIMPORTS=$(GOIMPORTS) $(REPO_ROOT)/hack/format.sh ./cmd ./pkg
+format: $(GOIMPORTS) $(GOIMPORTSREVISER)
+	@bash $(GARDENER_HACK_DIR)/format.sh ./cmd ./pkg
 
 #################################################################
 # Rules related to binary build, Docker image build and release #
@@ -87,7 +89,7 @@ verify: check format test
 
 .PHONY: test
 test:
-	@go test ./cmd/... ./pkg/...
+	@bash $(GARDENER_HACK_DIR)/test.sh ./cmd/... ./pkg/...
 
 .PHONY: test-unit
 test-unit:
