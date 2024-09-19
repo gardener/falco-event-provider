@@ -1,4 +1,4 @@
-falco-event-backend:
+falco-event-provider:
   base_definition:
     traits:
       component_descriptor:
