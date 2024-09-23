@@ -14,9 +14,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	authv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	rest "k8s.io/client-go/rest"
-
 	"k8s.io/client-go/kubernetes"
+	rest "k8s.io/client-go/rest"
 )
 
 type TokenCache struct {

@@ -9,14 +9,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/falco-event-backend/pkg/database"
-	"github.com/falco-event-backend/pkg/gardenauth"
-	server "github.com/falco-event-backend/pkg/server"
 	"github.com/gardener/falco-event-ingestor/pkg/auth"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/falco-event-backend/pkg/database"
+	"github.com/falco-event-backend/pkg/gardenauth"
+	server "github.com/falco-event-backend/pkg/server"
 )
 
 var (
