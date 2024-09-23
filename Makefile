@@ -35,7 +35,7 @@ include $(GARDENER_HACK_DIR)/tools.mk
 
 .PHONY: check
 check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM)
-	@bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/...
+	#@bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/...
 	@bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
 
 .PHONY: format

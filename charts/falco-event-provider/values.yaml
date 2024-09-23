@@ -5,7 +5,7 @@ eventProvider:
   ingressDomain:
   ingressClassName: nginx-ingress-gardener
   image: 
-    repositry: europe-docker.pkg.dev/gardener-project/releases/gardener/falco-event-provider
+    repository: europe-docker.pkg.dev/gardener-project/releases/gardener/falco-event-provider
     tag: 0.0.1
   port: 3200
   tlsServer: false
@@ -16,11 +16,11 @@ postgres:
   host: falco-event-db.falco-event-storage.svc.cluster.local
   port: 5432
   dbname: falco
-  password:
+  password: ""
 
 healthz:
   port: 8000
 
 gardener:
-  kubeconfig:
-  accessToken:
+  kubeconfig: "Cg=="
+  accessToken: ""
