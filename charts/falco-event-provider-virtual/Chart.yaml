@@ -1,0 +1,4 @@
+apiVersion: v1
+description: A Helm chart to deploy the falco-event-provider application related resources
+name: falco-event-provider-application
+version: 0.1.0

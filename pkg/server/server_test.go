@@ -10,8 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/falco-event-backend/pkg/database"
 	"golang.org/x/time/rate"
+
+	"github.com/falco-event-backend/pkg/database"
 )
 
 func TestLandscapeToRegex(t *testing.T) {

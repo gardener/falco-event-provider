@@ -17,12 +17,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/falco-event-backend/pkg/database"
-	"github.com/falco-event-backend/pkg/gardenauth"
 	"github.com/gardener/falco-event-ingestor/pkg/auth"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
+
+	"github.com/falco-event-backend/pkg/database"
+	"github.com/falco-event-backend/pkg/gardenauth"
 )
 
 var landscapes = []string{"sap-landscape-dev", "sap-landscape-canary", "sap-landscape-live"}
