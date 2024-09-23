@@ -28,9 +28,14 @@ spec:
     spec:
       automountServiceAccountToken: false
       containers:
-      - name: ingestor
+      - name: provider
         image: {{ include "image" .Values.eventProvider.image }}
         imagePullPolicy: Always
+        env:
+        - name: KUBECONFIG
+          value: /etc/falco-event-provider/kubeconfig
+        command:
+        - /falco-event-provider
         args:
         - --config-file
         - /etc/{{ .Values.name }}/config.yaml
@@ -49,6 +54,9 @@ spec:
         resources:
 {{ toYaml .Values.resources | indent 10 }}
         volumeMounts:
+        - name: service-account-token
+          mountPath: /var/run/secrets/gardener.cloud/shoot/generic-kubeconfig
+          readOnly: true
         - mountPath: /etc/{{ .Values.name }}
           name: all-volumes
         livenessProbe:
@@ -70,19 +78,26 @@ spec:
         runAsUser: 65532
       terminationGracePeriodSeconds: 30
       volumes:
+      - name: service-account-token
+        projected:
+          defaultMode: 420
+          sources:
+          - secret:
+              items:
+              - key: token
+                path: token
+              name: {{ .Values.name }}-token
+              optional: false
       - name: all-volumes
         projected:
           sources:
           - secret:
-              name: token-verification-key
+              name: {{ .Values.name }}-secret
               items:
-              - key: public.pem
-                path: token/public.pem
-          - secret:
-              name: {{ .Values.name }}-postgres-secret
-              items:
-              - key: password
+              - key: postgres_password
                 path: psql/password
+              - key: garden_kubeconfig
+                path: kubeconfig
           {{- if .Values.eventProvider.tlsServer }}
           - secret:
               name: tls-secret-provider

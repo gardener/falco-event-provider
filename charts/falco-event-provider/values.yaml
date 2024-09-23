@@ -22,6 +22,5 @@ healthz:
   port: 8000
 
 gardener:
+  kubeconfig:
   accessToken:
-
-appName: falco-event-provider
