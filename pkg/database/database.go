@@ -14,7 +14,10 @@ import (
 	"github.com/huandu/go-sqlbuilder"
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 )
+
+type idsType []int
 
 type PostgresConfig struct {
 	user      string
@@ -50,16 +53,16 @@ type EventCountRow struct {
 }
 
 type EventGroupRow struct {
-	Landscape     string         `json:"landscape"`
-	Project       string         `json:"project"`
-	Cluster       string         `json:"cluster"`
-	Count         int            `json:"count"`
-	Rule          string         `json:"rule"`
-	Ids           string         `json:"ids"`
-	EvtType       sql.NullString `json:"evttype"`
-	ProcName      sql.NullString `json:"procname"`
-	ProcCmdline   sql.NullString `json:"proccmdline"`
-	ContainerName sql.NullString `json:"containername"`
+	Landscape     string   `json:"landscape"`
+	Project       string   `json:"project"`
+	Cluster       string   `json:"cluster"`
+	Count         int      `json:"count"`
+	Rule          string   `json:"rule"`
+	Ids           []string `json:"ids"`
+	EvtType       *string  `json:"evttype,omitempty"`
+	ProcName      *string  `json:"procname,omitempty"`
+	ProcCmdline   *string  `json:"proccmdline,omitempty"`
+	ContainerName *string  `json:"containername,omitempty"`
 }
 
 func NewPostgresConfig(user, password, host string, port int, dbname string) *PostgresConfig {
@@ -218,12 +221,13 @@ func (pgconf *PostgresConfig) Group(landscape string, project string, cluster st
 	queryDone := time.Since(startTime)
 	log.Debugf("Query done %s", queryDone)
 
-	var events []EventGroupRow
+	var groups []EventGroupRow
 
 	for rows.Next() {
 		var row EventGroupRow
-		fmt.Printf("rows: %v\n", rows)
-		err = rows.Scan(&row.Landscape, &row.Project, &row.Cluster, &row.Count, &row.Rule, &row.Ids, &row.EvtType, &row.ProcName, &row.ProcCmdline, &row.ContainerName)
+		var idsUint []uint8
+
+		err = rows.Scan(&row.Landscape, &row.Project, &row.Cluster, &row.Count, &row.Rule, &idsUint, &row.EvtType, &row.ProcName, &row.ProcCmdline, &row.ContainerName)
 
 		if err != nil {
 			// Ignore known error of desired behaviour of replacing NULL with nil
@@ -232,12 +236,20 @@ func (pgconf *PostgresConfig) Group(landscape string, project string, cluster st
 				log.Errorf("Scan failed: %v", err)
 			}
 		}
-		events = append(events, row)
+
+		ids, err := storeIds(&idsUint)
+		if err != nil {
+			log.Errorf("Could not parse ids: %s", err)
+		} else {
+			row.Ids = *ids
+		}
+
+		groups = append(groups, row)
 	}
 
 	rowsDone := time.Since(startTime)
 	log.Debugf("Rows parsing done %s", rowsDone)
-	return events
+	return groups
 }
 
 func (pgconf *PostgresConfig) Count(landscape string) []EventCountRow {
@@ -315,4 +327,15 @@ func (pgconf *PostgresConfig) CheckHealth() error {
 	}
 
 	return nil
+}
+
+func storeIds(u *[]uint8) (*[]string, error) {
+	if u == nil {
+		return nil, fmt.Errorf("slice pointer supplied was nil")
+	}
+	i := make([]string, 0, len(*u))
+	for val := range *u {
+		i = append(i, cast.ToString(val))
+	}
+	return &i, nil
 }

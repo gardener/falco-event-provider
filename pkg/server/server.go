@@ -87,7 +87,6 @@ func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile s
 	countUrl := fmt.Sprintf("/provider/api/%s/count/{landscape:%s}", endpointVersion, landscapeRegex)
 	groupUrl := fmt.Sprintf("/provider/api/%s/group/{landscape:%s}/{project}/{cluster}", endpointVersion, landscapeRegex)
 
-
 	mux.HandleFunc(eventsUrl, newHandlePull(backendConf)).Methods("GET")
 	mux.HandleFunc(eventsUrlCluster, newHandlePull(backendConf)).Methods("GET")
 	mux.HandleFunc(countUrl, newHandleCount(backendConf)).Methods("GET")
@@ -170,7 +169,7 @@ func (tl *tokenLimits) cleanTokenLimits(sleep time.Duration, livetime time.Durat
 		log.Debug("Token rate limiter clean run")
 		tl.mutex.Lock()
 		for token, tokenLimit := range tl.limits {
-			fmt.Print(time.Since(tokenLimit.lastSeen))
+			log.Debug(time.Since(tokenLimit.lastSeen))
 			if time.Since(tokenLimit.lastSeen) > livetime {
 				log.Debugf("Removing token %s", token)
 				delete(tl.limits, token)
@@ -201,7 +200,6 @@ func newHandleGroup(backendConf backendConf) func(http.ResponseWriter, *http.Req
 			throwError(w, "Too many requests: limiting all incoming requests", "Too Many Requests", http.StatusTooManyRequests)
 			return
 		}
-
 
 		v := backendConf.validator
 		p := backendConf.postgres
