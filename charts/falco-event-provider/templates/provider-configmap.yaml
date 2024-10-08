@@ -15,3 +15,6 @@ data:
       port: {{ .Values.eventProvider.port }}
     healthz:
       port: {{ .Values.healthz.port }}
+    virtualGarden:
+      name: {{ .Values.eventProvider.virtualGarden.name }}
+      dnsName: {{ .Values.eventProvider.virtualGarden.dnsName }}
