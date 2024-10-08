@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    networking.gardener.cloud/access-target-apiserver: allowed
-  name: {{ .Release.Namespace }}
