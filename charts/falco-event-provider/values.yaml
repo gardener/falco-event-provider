@@ -10,6 +10,9 @@ eventProvider:
   port: 3200
   tlsServer: false
   replicas: 2
+  virtualGarden:
+    name: "" # sap-landscape-dev
+    dnsName: virtual-garden-kube-apiserver
 
 postgres:
   user: gardener

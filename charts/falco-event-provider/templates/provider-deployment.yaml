@@ -25,6 +25,7 @@ spec:
         networking.gardener.cloud/to-dns: allowed
         resources.gardener.cloud/managed-by: gardener
         networking.resources.gardener.cloud/to-postgres-tcp-5432: allowed
+        networking.resources.gardener.cloud/to-garden-virtual-garden-kube-apiserver-tcp-443: allowed
     spec:
       automountServiceAccountToken: false
       containers:

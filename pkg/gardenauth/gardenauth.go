@@ -18,6 +18,16 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
+var (
+	LandscapeConfigInstance *LandscapeConfig
+	TlSConfig               rest.TLSClientConfig
+)
+
+type LandscapeConfig struct {
+	Name    string
+	DNSName string
+}
+
 type TokenCache struct {
 	cache map[string]*authStorage
 	mutex sync.Mutex
@@ -91,16 +101,10 @@ func (tokenCache *TokenCache) inTokenCache(token string, landscape string, proje
 
 func CheckPermission(token string, project string, landscape string, projects *Projects, tokenCache *TokenCache) error {
 
-	urlMap := map[string]string{
-		"sap-landscape-dev":    "https://api.dev.gardener.cloud.sap",
-		"sap-landscape-canary": "https://api.canary.gardener.cloud.sap",
-		"sap-landscape-live":   "https://api.live.gardener.cloud.sap",
-	}
-
-	url, ok := urlMap[landscape]
-	if !ok {
+	if landscape != LandscapeConfigInstance.Name {
 		return fmt.Errorf("landscape %s is not known", landscape)
 	}
+	url := "https://" + LandscapeConfigInstance.DNSName
 
 	if tokenCache.inTokenCache(token, landscape, project) {
 		log.Info("Token was found in cache")
@@ -111,7 +115,7 @@ func CheckPermission(token string, project string, landscape string, projects *P
 	config := &rest.Config{
 		// TODO: switch to using cluster DNS.
 		Host:            url,
-		TLSClientConfig: rest.TLSClientConfig{},
+		TLSClientConfig: TlSConfig,
 		BearerToken:     token,
 	}
 

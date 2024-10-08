@@ -52,6 +52,11 @@ func initConfig(configFile string, postgresPasswordFile string) (*database.Postg
 		viper.GetString("postgres.dbname"),
 	)
 
+	gardenauth.LandscapeConfigInstance = &gardenauth.LandscapeConfig{
+		Name:    viper.GetString("virtualGarden.name"),
+		DNSName: viper.GetString("virtualGarden.dnsName"),
+	}
+
 	return postgresConfig, auth.NewAuth()
 }
 
@@ -78,6 +83,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		gardenauth.TlSConfig = config.TLSClientConfig
 		dynamicGardenCluster, err := dynamic.NewForConfig(config)
 		if err != nil {
 			panic(err)
