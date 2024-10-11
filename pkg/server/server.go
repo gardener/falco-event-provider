@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,8 +24,6 @@ import (
 	"github.com/falco-event-backend/pkg/database"
 	"github.com/falco-event-backend/pkg/gardenauth"
 )
-
-var landscapes = []string{"sap-landscape-dev", "sap-landscape-canary", "sap-landscape-live"}
 
 type Filter struct {
 	Start      time.Time `json:"start"`
@@ -80,11 +77,12 @@ func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile s
 
 	mux := mux.NewRouter()
 
-	endpointVersion := "v1alpha2"
-	landscapeRegex := landscapesToRegex(landscapes)
-	eventsUrl := fmt.Sprintf("/backend/api/%s/events/{landscape:%s}/{project}", endpointVersion, landscapeRegex)
-	eventsUrlCluster := fmt.Sprintf("/backend/api/%s/events/{landscape:%s}/{project}/{cluster}", endpointVersion, landscapeRegex)
-	countUrl := fmt.Sprintf("/backend/api/%s/count/{landscape:%s}", endpointVersion, landscapeRegex)
+	commonName := "falco-provider"
+	endpointVersion := "v1alpha1"
+	landscape := gardenauth.LandscapeConfigInstance.Name
+	eventsUrl := fmt.Sprintf("/%s/api/%s/events/{landscape:%s}/{project}", commonName, endpointVersion, landscape)
+	eventsUrlCluster := fmt.Sprintf("/%s/api/%s/events/{landscape:%s}/{project}/{cluster}", commonName, endpointVersion, landscape)
+	countUrl := fmt.Sprintf("/%s/api/%s/count/{landscape:%s}", commonName, endpointVersion, landscape)
 
 	mux.HandleFunc(eventsUrl, newHandlePull(backendConf)).Methods("GET")
 	mux.HandleFunc(eventsUrlCluster, newHandlePull(backendConf)).Methods("GET")
@@ -137,7 +135,6 @@ func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile s
 			}
 		}()
 	}
-	// go server.cleanLimits()
 
 	wg.Wait()
 	return server
@@ -330,6 +327,11 @@ func newFilter() Filter {
 func parseFilter(vals url.Values) (Filter, error) {
 	filterStr := vals.Get("filter")
 	filter := newFilter()
+
+	if filterStr == "" {
+		return filter, nil
+	}
+
 	log.Info(filterStr)
 	err := json.Unmarshal([]byte(filterStr), &filter)
 	if err != nil {
@@ -345,12 +347,12 @@ func parseFilter(vals url.Values) (Filter, error) {
 }
 
 func getLandscapeFromUrl(pathVars map[string]string) (string, error) {
-	landscape, ok := pathVars["landscape"]
-	if !slices.Contains(landscapes, landscape) || !ok {
+	pathLandscape, ok := pathVars["landscape"]
+	if !ok || pathLandscape != gardenauth.LandscapeConfigInstance.Name {
 		return "", errors.New("landscape not found")
 	}
-	log.Debugf("Got landscape %s", landscape)
-	return landscape, nil
+	log.Debugf("Got landscape %s", pathLandscape)
+	return pathLandscape, nil
 }
 
 func getProjectFromUrl(pathVars map[string]string) (string, error) {
