@@ -1,8 +1,8 @@
-# Gardner Falco Event Provider
+# Gardener Falco Event Provider
 
 [![reuse compliant](https://reuse.software/badge/reuse-compliant.svg)](https://reuse.software/)
 
-This component provides an interface for clients (Gardener Dashboard, command line) to retrieve stored Falco events. 
+This component provides an interface for clients (Gardener Dashboard, command line) to retrieve stored Falco events.
 
 ## Endpoints
 
