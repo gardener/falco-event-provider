@@ -348,7 +348,8 @@ func parseFilter(vals url.Values) (Filter, error) {
 
 func getLandscapeFromUrl(pathVars map[string]string) (string, error) {
 	pathLandscape, ok := pathVars["landscape"]
-	if !ok || pathLandscape != gardenauth.LandscapeConfigInstance.Name {
+	if !ok || gardenauth.LandscapeConfigInstance == nil ||
+		pathLandscape != gardenauth.LandscapeConfigInstance.Name {
 		return "", errors.New("landscape not found")
 	}
 	log.Debugf("Got landscape %s", pathLandscape)
