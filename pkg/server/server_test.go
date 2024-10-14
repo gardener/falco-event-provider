@@ -13,6 +13,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/falco-event-backend/pkg/database"
+	"github.com/falco-event-backend/pkg/gardenauth"
 )
 
 func TestLandscapeToRegex(t *testing.T) {
@@ -168,12 +169,13 @@ func TestGetProjectFromUrl(t *testing.T) {
 }
 
 func TestGetLandscapeFromUrl(t *testing.T) {
+	landscapename := "test-landscape"
+	gardenauth.LandscapeConfigInstance = &gardenauth.LandscapeConfig{Name: landscapename}
 	pathVars := map[string]string{"landscape": ""}
 	if _, err := getLandscapeFromUrl(pathVars); err == nil {
 		t.Errorf("Did not report empty landscape")
 	}
 
-	landscapename := landscapes[0]
 	pathVars["landscape"] = landscapename
 	landscape, err := getLandscapeFromUrl(pathVars)
 	if err != nil {

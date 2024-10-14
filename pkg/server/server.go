@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,8 +24,6 @@ import (
 	"github.com/falco-event-backend/pkg/database"
 	"github.com/falco-event-backend/pkg/gardenauth"
 )
-
-var landscapes = []string{"sap-landscape-dev", "sap-landscape-canary", "sap-landscape-live"}
 
 type Filter struct {
 	Start      time.Time `json:"start"`
@@ -80,15 +77,21 @@ func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile s
 
 	mux := mux.NewRouter()
 
-	endpointVersion := "v1alpha2"
-	landscapeRegex := landscapesToRegex(landscapes)
-	eventsUrl := fmt.Sprintf("/backend/api/%s/events/{landscape:%s}/{project}", endpointVersion, landscapeRegex)
-	eventsUrlCluster := fmt.Sprintf("/backend/api/%s/events/{landscape:%s}/{project}/{cluster}", endpointVersion, landscapeRegex)
-	countUrl := fmt.Sprintf("/backend/api/%s/count/{landscape:%s}", endpointVersion, landscapeRegex)
+	endpointVersion := "v1alpha1"
+	landscape := gardenauth.LandscapeConfigInstance.Name
 
+	eventsUrl := fmt.Sprintf("/api/events/%s/{landscape:%s}/{project}", endpointVersion, landscape)
+	eventsUrlCluster := fmt.Sprintf("/api/events/%s/{landscape:%s}/{project}/{cluster}", endpointVersion, landscape)
 	mux.HandleFunc(eventsUrl, newHandlePull(backendConf)).Methods("GET")
 	mux.HandleFunc(eventsUrlCluster, newHandlePull(backendConf)).Methods("GET")
+
+	countUrl := fmt.Sprintf("/api/count/%s/{landscape:%s}", endpointVersion, landscape)
 	mux.HandleFunc(countUrl, newHandleCount(backendConf)).Methods("GET")
+
+	groupUrl := fmt.Sprintf("/api/group/%s/{landscape:%s}/{project}", endpointVersion, landscape)
+	groupUrlCluster := fmt.Sprintf("/api/group/%s/{landscape:%s}/{project}/{cluster}", endpointVersion, landscape)
+	mux.HandleFunc(groupUrl, newHandleGroup(backendConf)).Methods("GET")
+	mux.HandleFunc(groupUrlCluster, newHandleGroup(backendConf)).Methods("GET")
 
 	tlsCfg := &tls.Config{
 		MinVersion: tls.VersionTLS12,
@@ -137,7 +140,6 @@ func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile s
 			}
 		}()
 	}
-	// go server.cleanLimits()
 
 	wg.Wait()
 	return server
@@ -167,7 +169,7 @@ func (tl *tokenLimits) cleanTokenLimits(sleep time.Duration, livetime time.Durat
 		log.Debug("Token rate limiter clean run")
 		tl.mutex.Lock()
 		for token, tokenLimit := range tl.limits {
-			fmt.Print(time.Since(tokenLimit.lastSeen))
+			log.Debug(time.Since(tokenLimit.lastSeen))
 			if time.Since(tokenLimit.lastSeen) > livetime {
 				log.Debugf("Removing token %s", token)
 				delete(tl.limits, token)
@@ -189,6 +191,59 @@ func newHandleHealth(p *database.PostgresConfig) func(http.ResponseWriter, *http
 				log.Errorf("Could not set health http header: %s", err)
 			}
 		}
+	}
+}
+
+func newHandleGroup(backendConf backendConf) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := checkLimit(backendConf.generalLimiter); err != nil {
+			throwError(w, "Too many requests: limiting all incoming requests", "Too Many Requests", http.StatusTooManyRequests)
+			return
+		}
+
+		v := backendConf.validator
+		p := backendConf.postgres
+		token, err := v.ExtractToken(r)
+		if err != nil {
+			throwError(w, fmt.Sprintf("Error extracting token: %s", err), "valid token required", http.StatusUnauthorized)
+			return
+		}
+
+		if err := backendConf.tokenLimits.checkTokenLimits(*token); err != nil {
+			throwError(w, fmt.Sprintf("The token is rate limited: %s", err), "too Many Requests", http.StatusTooManyRequests)
+			return
+		}
+
+		pathVars := mux.Vars(r)
+
+		landscape, err := getLandscapeFromUrl(pathVars)
+		if err != nil {
+			throwError(w, "Landscape is unknown", "unknown landscape provided", http.StatusBadRequest)
+			return
+		}
+
+		project, err := getProjectFromUrl(pathVars)
+		if err != nil {
+			throwError(w, "Project was not supplied", "no project provided", http.StatusBadRequest)
+			return
+		}
+
+		cluster, _ := getClusterFromUrl(pathVars) // We also accept no cluster -> all events
+
+		if err := gardenauth.CheckPermission(*token, project, landscape, projectsPackage, backendConf.tokenCache); err != nil {
+			log.Errorf("Error validating token: %s", err)
+			http.Error(w, "valid token required", http.StatusUnauthorized)
+			return
+		}
+
+		rows := p.Group(landscape, project, cluster, time.Time{}, time.Now())
+		output := map[string]interface{}{"response": rows}
+
+		w.Header().Add("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(output); err != nil {
+			throwError(w, fmt.Sprintf("Error encoding rows %s", err), "error encoding data", http.StatusBadRequest)
+		}
+
 	}
 }
 
@@ -330,6 +385,11 @@ func newFilter() Filter {
 func parseFilter(vals url.Values) (Filter, error) {
 	filterStr := vals.Get("filter")
 	filter := newFilter()
+
+	if filterStr == "" {
+		return filter, nil
+	}
+
 	log.Info(filterStr)
 	err := json.Unmarshal([]byte(filterStr), &filter)
 	if err != nil {
@@ -345,12 +405,13 @@ func parseFilter(vals url.Values) (Filter, error) {
 }
 
 func getLandscapeFromUrl(pathVars map[string]string) (string, error) {
-	landscape, ok := pathVars["landscape"]
-	if !slices.Contains(landscapes, landscape) || !ok {
+	pathLandscape, ok := pathVars["landscape"]
+	if !ok || gardenauth.LandscapeConfigInstance == nil ||
+		pathLandscape != gardenauth.LandscapeConfigInstance.Name {
 		return "", errors.New("landscape not found")
 	}
-	log.Debugf("Got landscape %s", landscape)
-	return landscape, nil
+	log.Debugf("Got landscape %s", pathLandscape)
+	return pathLandscape, nil
 }
 
 func getProjectFromUrl(pathVars map[string]string) (string, error) {
