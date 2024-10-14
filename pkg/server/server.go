@@ -80,16 +80,16 @@ func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile s
 	endpointVersion := "v1alpha1"
 	landscape := gardenauth.LandscapeConfigInstance.Name
 
-	eventsUrl := fmt.Sprintf("/api/%s/events/{landscape:%s}/{project}", endpointVersion, landscape)
-	eventsUrlCluster := fmt.Sprintf("/api/%s/events/{landscape:%s}/{project}/{cluster}", endpointVersion, landscape)
+	eventsUrl := fmt.Sprintf("/api/events/%s/{landscape:%s}/{project}", endpointVersion, landscape)
+	eventsUrlCluster := fmt.Sprintf("/api/events/%s/{landscape:%s}/{project}/{cluster}", endpointVersion, landscape)
 	mux.HandleFunc(eventsUrl, newHandlePull(backendConf)).Methods("GET")
 	mux.HandleFunc(eventsUrlCluster, newHandlePull(backendConf)).Methods("GET")
 
-	countUrl := fmt.Sprintf("/api/%s/count/{landscape:%s}", endpointVersion, landscape)
+	countUrl := fmt.Sprintf("/api/count/%s/{landscape:%s}", endpointVersion, landscape)
 	mux.HandleFunc(countUrl, newHandleCount(backendConf)).Methods("GET")
 
-	groupUrl := fmt.Sprintf("/api/%s/group/{landscape:%s}/{project}", endpointVersion, landscape)
-	groupUrlCluster := fmt.Sprintf("/api/%s/group/{landscape:%s}/{project}/{cluster}", endpointVersion, landscape)
+	groupUrl := fmt.Sprintf("/api/group/%s/{landscape:%s}/{project}", endpointVersion, landscape)
+	groupUrlCluster := fmt.Sprintf("/api/group/%s/{landscape:%s}/{project}/{cluster}", endpointVersion, landscape)
 	mux.HandleFunc(groupUrl, newHandleGroup(backendConf)).Methods("GET")
 	mux.HandleFunc(groupUrlCluster, newHandleGroup(backendConf)).Methods("GET")
 

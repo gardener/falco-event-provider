@@ -22,7 +22,7 @@ The event endpoint can be queried for events originating from one specific clust
 The endpoint path consists of the landscape, project and cluster name. The cluster is optional and does not have to be provided.
 
 ``` bash
-api/v1alpha1/events/<LANDSCAPE>/<PROJECT>/<CLUSTER>
+api/events/v1alpha1/<LANDSCAPE>/<PROJECT>/<CLUSTER>
 ```
 
 #### Query parameters
@@ -43,7 +43,7 @@ The `start` and `end` time define the direction of obtaining event. Per default 
 #### Example request
 
 ```` bash
-api/v1alpha1/events/sap-landscape-dev/garden/aws-ha?filter=%7B%22limit%22%3A+1%2C+%22start%22%3A+%222024-09-02T08%3A48%3A10.297213%2B00%3A00%22%2C+%22end%22%3A+%222024-09-03T08%3A48%3A10.297213%2B00%3A00%22%7D
+api/events/v1alpha1/sap-landscape-dev/garden/aws-ha?filter=%7B%22limit%22%3A+1%2C+%22start%22%3A+%222024-09-02T08%3A48%3A10.297213%2B00%3A00%22%2C+%22end%22%3A+%222024-09-03T08%3A48%3A10.297213%2B00%3A00%22%7D
 ````
 
 #### Pagination
@@ -59,14 +59,14 @@ The count endpoint can be queried for a summary of event counts grouped by sever
 The endpoint path consists of the landscape.
 
 ``` bash
-api/v1alpha1/count/<LANDSCAPE>
+api/count/v1alpha1/<LANDSCAPE>
 ```
 
 
 #### Example request
 
 ``` bash
-api/v1alpha1/count/sap-landscape-dev
+api/count/v1alpha1/sap-landscape-dev
 ```
 
 ### Group endpoint
@@ -78,12 +78,12 @@ The group endpoint can be queried for an aggregation of events over time and key
 The endpoint path consists of the landscape, the project and an optional cluster 
 
 ``` bash
-api/v1alpha1/group/<LANDSCAPE>/<PROJECT>/<CLUSTER>
+api/group/v1alpha1/<LANDSCAPE>/<PROJECT>/<CLUSTER>
 ```
 
 
 #### Example request
 
 ``` bash
-api/v1alpha1/group/sap-landscape-dev/garden
+api/group/v1alpha1/sap-landscape-dev/garden
 ```
