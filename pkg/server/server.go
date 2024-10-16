@@ -351,7 +351,13 @@ func newHandlePull(backendConf backendConf) func(http.ResponseWriter, *http.Requ
 			log.Errorf("Could not generate continue filter: %v", err)
 		}
 
-		output := map[string]interface{}{"response": rows}
+		output := make(map[string]interface{})
+		if len(rows) <= filter.Limit {
+			output["response"] = rows
+		} else {
+			output["response"] = rows[:filter.Limit]
+		}
+
 		if conFilter != nil {
 			output["continueFilter"] = conFilter
 		}
@@ -390,7 +396,6 @@ func parseFilter(vals url.Values) (Filter, error) {
 		return filter, nil
 	}
 
-	log.Info(filterStr)
 	err := json.Unmarshal([]byte(filterStr), &filter)
 	if err != nil {
 		log.Errorf("Errror unmarshalling: %v", err)
