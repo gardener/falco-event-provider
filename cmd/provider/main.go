@@ -34,15 +34,13 @@ func initConfig(configFile string, postgresPasswordFile string) (*database.Postg
 	viper.SetConfigType("yaml")
 
 	if err := viper.ReadInConfig(); err != nil {
-		os.Stderr.WriteString(err.Error() + "\n")
-		os.Exit(1)
+		log.Fatalf("Cannot read config file: %s", err)
 	}
 	configureLogging()
 
 	postgresPassword, err := os.ReadFile(postgresPasswordFile)
 	if err != nil {
-		os.Stderr.WriteString("Cannot read postgres password: " + err.Error() + "\n")
-		os.Exit(1)
+		log.Fatalf("Cannot read postgres password: %s", err)
 	}
 	postgresConfig := database.NewPostgresConfig(
 		viper.GetString("postgres.user"),
@@ -81,12 +79,12 @@ func main() {
 		fmt.Println("Using kubeconfig from env")
 		config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 		if err != nil {
-			panic(err)
+			log.Fatalf("Could not build config from flags: %s", err)
 		}
 		gardenauth.TlSConfig = config.TLSClientConfig
 		dynamicGardenCluster, err := dynamic.NewForConfig(config)
 		if err != nil {
-			panic(err)
+			log.Fatalf("Could not create dynamic client from config: %s", err)
 		}
 		projects = gardenauth.NewProjects(dynamicGardenCluster)
 		go projects.StartProjectWatch()
