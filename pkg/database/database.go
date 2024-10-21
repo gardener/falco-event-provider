@@ -15,9 +15,9 @@ import (
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
-)
 
-type idsType []int
+	"github.com/falco-event-backend/pkg/metrics"
+)
 
 type PostgresConfig struct {
 	user      string
@@ -247,12 +247,13 @@ func (pgconf *PostgresConfig) Group(landscape string, project string, cluster st
 		groups = append(groups, row)
 	}
 
-	rowsDone := time.Since(startTime)
-	log.Debugf("Rows parsing done %s", rowsDone)
+	metrics.RequestsGroupGauge.Set(time.Since(start).Seconds())
 	return groups
 }
 
 func (pgconf *PostgresConfig) Count(landscape string) []EventCountRow {
+    start := time.Now()
+
 	rows, err := pgconf.stmtCount.Query(landscape)
 	if err != nil {
 		log.Errorf("Query failed: %v", err)
@@ -269,6 +270,8 @@ func (pgconf *PostgresConfig) Count(landscape string) []EventCountRow {
 		}
 		events = append(events, row)
 	}
+
+	metrics.RequestsCountGauge.Set(time.Since(start).Seconds())
 	return events
 }
 
@@ -283,9 +286,6 @@ func (pgconf *PostgresConfig) Select(landscape string, project string, cluster s
 	if err != nil {
 		log.Errorf("Query failed: %v", err)
 	}
-
-	queryDone := time.Since(startTime)
-	log.Debugf("Query done %s", queryDone)
 
 	events := make([]FalcoRow, 0, limit)
 
@@ -303,8 +303,7 @@ func (pgconf *PostgresConfig) Select(landscape string, project string, cluster s
 		events = append(events, row)
 	}
 
-	rowsDone := time.Since(startTime)
-	log.Debugf("Rows parsing done %s", rowsDone)
+	metrics.RequestsEventGauge.Set(time.Since(startTime).Seconds())
 	return events
 }
 
