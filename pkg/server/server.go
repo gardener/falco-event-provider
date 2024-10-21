@@ -18,11 +18,13 @@ import (
 
 	"github.com/gardener/falco-event-ingestor/pkg/auth"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 
 	"github.com/falco-event-backend/pkg/database"
 	"github.com/falco-event-backend/pkg/gardenauth"
+	"github.com/falco-event-backend/pkg/metrics"
 )
 
 type Filter struct {
@@ -75,6 +77,10 @@ func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile s
 	healthMux := http.NewServeMux()
 	healthMux.HandleFunc("/healthz", newHandleHealth(p))
 
+	metricsPort := 8080
+	metricsMux := http.NewServeMux()
+	metricsMux.Handle("/metrics", promhttp.Handler())
+
 	mux := mux.NewRouter()
 
 	endpointVersion := "v1alpha1"
@@ -103,7 +109,15 @@ func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile s
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(4)
+	wg.Add(5)
+
+	go func() {
+		defer wg.Done()
+		log.Info("Starting metrics server at port " + strconv.Itoa(metricsPort))
+		if err := http.ListenAndServe(":"+strconv.Itoa(metricsPort), metricsMux); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	go func() {
 		defer wg.Done()
@@ -126,7 +140,7 @@ func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile s
 	if tlsCertFile == "" || tlsKeyFile == "" {
 		go func() {
 			defer wg.Done()
-			log.Info("Starting non-tls backend server at port " + strconv.Itoa(port))
+			log.Info("Starting non-tls provider server at port " + strconv.Itoa(port))
 			if err := server.ListenAndServe(); err != nil {
 				log.Fatal(err)
 			}
@@ -134,7 +148,7 @@ func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile s
 	} else {
 		go func() {
 			defer wg.Done()
-			log.Info("Starting tls backend server at port " + strconv.Itoa(port))
+			log.Info("Starting tls provider server at port " + strconv.Itoa(port))
 			if err := server.ListenAndServeTLS(tlsCertFile, tlsKeyFile); err != nil {
 				log.Fatal(err)
 			}
@@ -244,6 +258,7 @@ func newHandleGroup(backendConf backendConf) func(http.ResponseWriter, *http.Req
 			throwError(w, fmt.Sprintf("Error encoding rows %s", err), "error encoding data", http.StatusBadRequest)
 		}
 
+		metrics.RequestsGroup.Inc()
 	}
 }
 
@@ -290,6 +305,7 @@ func newHandleCount(backendConf backendConf) func(http.ResponseWriter, *http.Req
 			throwError(w, fmt.Sprintf("Error encoding rows %s", err), "error encoding data", http.StatusBadRequest)
 		}
 
+		metrics.RequestsCount.Inc()
 	}
 }
 
@@ -369,6 +385,8 @@ func newHandlePull(backendConf backendConf) func(http.ResponseWriter, *http.Requ
 
 		queryDone := time.Since(startTime)
 		log.Infof("Returning %d events in %v", len(rows), queryDone)
+
+		metrics.RequestsEvent.Inc()
 	}
 }
 
@@ -448,7 +466,10 @@ func landscapesToRegex(landscapes []string) string {
 
 func checkLimit(limiter *rate.Limiter) error {
 	if !limiter.Allow() {
+		metrics.Limit.Set(1)
 		return fmt.Errorf("too many requests")
 	}
+
+	metrics.Limit.Set(0)
 	return nil
 }
