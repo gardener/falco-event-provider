@@ -257,8 +257,6 @@ func newHandleGroup(backendConf backendConf) func(http.ResponseWriter, *http.Req
 		if err := json.NewEncoder(w).Encode(output); err != nil {
 			throwError(w, fmt.Sprintf("Error encoding rows %s", err), "error encoding data", http.StatusBadRequest)
 		}
-
-		metrics.RequestsGroup.Inc()
 	}
 }
 
@@ -304,8 +302,6 @@ func newHandleCount(backendConf backendConf) func(http.ResponseWriter, *http.Req
 		if err := json.NewEncoder(w).Encode(output); err != nil {
 			throwError(w, fmt.Sprintf("Error encoding rows %s", err), "error encoding data", http.StatusBadRequest)
 		}
-
-		metrics.RequestsCount.Inc()
 	}
 }
 
@@ -385,8 +381,6 @@ func newHandlePull(backendConf backendConf) func(http.ResponseWriter, *http.Requ
 
 		queryDone := time.Since(startTime)
 		log.Infof("Returning %d events in %v", len(rows), queryDone)
-
-		metrics.RequestsEvent.Inc()
 	}
 }
 
@@ -465,11 +459,10 @@ func landscapesToRegex(landscapes []string) string {
 }
 
 func checkLimit(limiter *rate.Limiter) error {
+	metrics.LimitTokens.Set(limiter.Tokens())
 	if !limiter.Allow() {
-		metrics.Limit.Set(1)
 		return fmt.Errorf("too many requests")
 	}
 
-	metrics.Limit.Set(0)
 	return nil
 }

@@ -247,12 +247,12 @@ func (pgconf *PostgresConfig) Group(landscape string, project string, cluster st
 		groups = append(groups, row)
 	}
 
-	metrics.RequestsGroupGauge.Set(time.Since(start).Seconds())
+	metrics.RequestsGroupHist.Observe(time.Since(startTime).Seconds())
 	return groups
 }
 
 func (pgconf *PostgresConfig) Count(landscape string) []EventCountRow {
-    start := time.Now()
+    startTime := time.Now()
 
 	rows, err := pgconf.stmtCount.Query(landscape)
 	if err != nil {
@@ -271,7 +271,7 @@ func (pgconf *PostgresConfig) Count(landscape string) []EventCountRow {
 		events = append(events, row)
 	}
 
-	metrics.RequestsCountGauge.Set(time.Since(start).Seconds())
+	metrics.RequestsCountHist.Observe(time.Since(startTime).Seconds())
 	return events
 }
 
@@ -303,7 +303,7 @@ func (pgconf *PostgresConfig) Select(landscape string, project string, cluster s
 		events = append(events, row)
 	}
 
-	metrics.RequestsEventGauge.Set(time.Since(startTime).Seconds())
+	metrics.RequestsEventHist.Observe(time.Since(startTime).Seconds())
 	return events
 }
 

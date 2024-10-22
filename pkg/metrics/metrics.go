@@ -14,59 +14,38 @@ const (
 )
 
 var (
-	RequestsEvent = promauto.NewCounter(
-		prometheus.CounterOpts{
+	RequestsEventHist = promauto.NewHistogram(
+		prometheus.HistogramOpts{
 			Namespace: namespace,
-			Name:      "requests_events",
-			Help:      "Total number of successful event endpoint requests.",
+			Name:      "requests_events_hist",
+			Help:      "Historgam for event endpoint request duration.",
+			Buckets:  prometheus.DefBuckets,
 		},
 	)
 
-	RequestsCount = promauto.NewCounter(
-		prometheus.CounterOpts{
+	RequestsCountHist = promauto.NewHistogram(
+		prometheus.HistogramOpts{
 			Namespace: namespace,
-			Name:      "requests_count",
-			Help:      "Total number of successful count endpoint requests.",
+			Name:      "requests_count_hist",
+			Help:      "Historgam for count endpoint request duration.",
+			Buckets:  prometheus.DefBuckets,
 		},
 	)
 
-	RequestsGroup = promauto.NewCounter(
-		prometheus.CounterOpts{
+	RequestsGroupHist = promauto.NewHistogram(
+		prometheus.HistogramOpts{
 			Namespace: namespace,
-			Name:      "requests_group",
-			Help:      "Total number of successful group endpoint requests.",
+			Name:      "requests_group_hist",
+			Help:      "Historgam for group endpoint request duration.",
+			Buckets:  prometheus.DefBuckets,
 		},
 	)
 
-	RequestsEventGauge = promauto.NewGauge(
+	LimitTokens = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
-			Name:      "duration_events",
-			Help:      "Time to query database for events.",
-		},
-	)
-
-	RequestsCountGauge = promauto.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: namespace,
-			Name:      "duration_count",
-			Help:      "Time to query database for event count.",
-		},
-	)
-
-	RequestsGroupGauge = promauto.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: namespace,
-			Name:      "duration_group",
-			Help:      "Time to query database for event grouping.",
-		},
-	)
-
-	Limit = promauto.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: namespace,
-			Name:      "requests_limit",
-			Help:      "Represents whether general rate limiting is active.",
+			Name:      "requests_limit_tokens",
+			Help:      "Number of tokens left before rate limiting becomes active.",
 		},
 	)
 )
