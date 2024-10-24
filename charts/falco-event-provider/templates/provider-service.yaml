@@ -3,6 +3,9 @@ kind: Service
 metadata:
   annotations:
     networking.resources.gardener.cloud/from-world-to-ports: '[{"protocol":"TCP","port":3200}]'
+    networking.resources.gardener.cloud/from-all-garden-scrape-targets-allowed-ports: '[{"port":8080,"protocol":"TCP"}]'
+    networking.resources.gardener.cloud/namespace-selectors: '[{"matchLabels":{"kubernetes.io/metadata.name":"garden"}}]'
+    networking.resources.gardener.cloud/pod-label-selector-namespace-alias: extensions
   name: {{ .Values.name }}
 spec:
   ports:
@@ -13,6 +16,10 @@ spec:
     port: 3200
   {{- end }}
     targetPort: 3200
+  - name: metrics
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
   selector:
     app: {{ .Values.name }}
   sessionAffinity: None
