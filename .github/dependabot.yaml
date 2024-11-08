@@ -6,6 +6,15 @@ updates:
     interval: "weekly"
   labels:
   - kind/enhancement
+  groups:
+  # Group all version-updates, except Gardener. Gardener-components should receive their own PR this way. Security updates will
+  # also receive their own individual PRs.
+    non-gardener-dependencies:
+      applies-to: "version-updates"
+      patterns:
+      - "*"
+      exclude-patterns:
+      - "github.com/gardener*"
 - package-ecosystem: "docker"
   directory: "/"
   schedule:
