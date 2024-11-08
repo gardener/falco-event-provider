@@ -7,7 +7,7 @@ require (
 	github.com/gardener/gardener v1.100.0
 	github.com/go-logr/logr v1.4.2
 	github.com/gorilla/mux v1.8.1
-	github.com/huandu/go-sqlbuilder v1.28.1
+	github.com/huandu/go-sqlbuilder v1.32.0
 	github.com/lib/pq v1.10.9
 	github.com/prometheus/client_golang v1.19.1
 	github.com/sirupsen/logrus v1.9.3
