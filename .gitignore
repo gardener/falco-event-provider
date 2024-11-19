@@ -33,3 +33,6 @@ go.work
 dive.log
 /tmp
 /local
+
+# gosec
+gosec-report.sarif

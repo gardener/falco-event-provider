@@ -84,8 +84,19 @@ install:
 # Rules for verification, testing and cleaning #
 #####################################################################
 
+.PHONY: verify-extended
+verify-extended: check format test sast-report
+
 .PHONY: verify
-verify: check format test
+verify: check format test sast
+
+.PHONY: sast
+sast: $(GOSEC)
+	@bash $(GARDENER_HACK_DIR)/sast.sh
+
+.PHONY: sast-report
+sast-report: $(GOSEC)
+	@bash $(GARDENER_HACK_DIR)/sast.sh --gosec-report true
 
 .PHONY: test
 test:
