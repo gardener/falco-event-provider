@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/gardener/falco-event-ingestor/pkg/auth"
 	log "github.com/sirupsen/logrus"
@@ -38,7 +39,7 @@ func initConfig(configFile string, postgresPasswordFile string) (*database.Postg
 	}
 	configureLogging()
 
-	postgresPassword, err := os.ReadFile(postgresPasswordFile)
+	postgresPassword, err := os.ReadFile(filepath.Clean(postgresPasswordFile))
 	if err != nil {
 		log.Fatalf("Cannot read postgres password: %s", err)
 	}

@@ -19,7 +19,7 @@ var (
 			Namespace: namespace,
 			Name:      "requests_events_hist",
 			Help:      "Historgam for event endpoint request duration.",
-			Buckets:  prometheus.DefBuckets,
+			Buckets:   prometheus.DefBuckets,
 		},
 	)
 
@@ -28,7 +28,7 @@ var (
 			Namespace: namespace,
 			Name:      "requests_count_hist",
 			Help:      "Historgam for count endpoint request duration.",
-			Buckets:  prometheus.DefBuckets,
+			Buckets:   prometheus.DefBuckets,
 		},
 	)
 
@@ -37,7 +37,7 @@ var (
 			Namespace: namespace,
 			Name:      "requests_group_hist",
 			Help:      "Historgam for group endpoint request duration.",
-			Buckets:  prometheus.DefBuckets,
+			Buckets:   prometheus.DefBuckets,
 		},
 	)
 
