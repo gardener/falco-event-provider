@@ -103,9 +103,22 @@ func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile s
 		MinVersion: tls.VersionTLS12,
 	}
 	server := &http.Server{
-		Addr:      ":" + strconv.Itoa(port),
-		Handler:   mux,
-		TLSConfig: tlsCfg,
+		Addr:              ":" + strconv.Itoa(port),
+		Handler:           mux,
+		TLSConfig:         tlsCfg,
+		ReadHeaderTimeout: 15 * time.Second,
+	}
+
+	metricsServer := &http.Server{
+		Addr:              ":" + strconv.Itoa(metricsPort),
+		Handler:           metricsMux,
+		ReadHeaderTimeout: 15 * time.Second,
+	}
+
+	healthServer := &http.Server{
+		Addr:              ":" + strconv.Itoa(healthPort),
+		Handler:           healthMux,
+		ReadHeaderTimeout: 15 * time.Second,
 	}
 
 	wg := sync.WaitGroup{}
@@ -114,7 +127,7 @@ func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile s
 	go func() {
 		defer wg.Done()
 		log.Info("Starting metrics server at port " + strconv.Itoa(metricsPort))
-		if err := http.ListenAndServe(":"+strconv.Itoa(metricsPort), metricsMux); err != nil {
+		if err := metricsServer.ListenAndServe(); err != nil {
 			log.Fatal(err)
 		}
 	}()
@@ -132,7 +145,7 @@ func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile s
 	go func() {
 		defer wg.Done()
 		log.Info("Starting health server at port " + strconv.Itoa(healthPort))
-		if err := http.ListenAndServe(":"+strconv.Itoa(healthPort), healthMux); err != nil {
+		if err := healthServer.ListenAndServe(); err != nil {
 			log.Fatal(err)
 		}
 	}()

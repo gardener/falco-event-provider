@@ -252,7 +252,7 @@ func (pgconf *PostgresConfig) Group(landscape string, project string, cluster st
 }
 
 func (pgconf *PostgresConfig) Count(landscape string) []EventCountRow {
-    startTime := time.Now()
+	startTime := time.Now()
 
 	rows, err := pgconf.stmtCount.Query(landscape)
 	if err != nil {
