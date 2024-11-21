@@ -63,13 +63,24 @@ var (
 )
 
 // func NewServer(v *auth.Auth, p *postgres.PostgresConfig, port int, clusterDailyEventLimit int, tlsCertFile string, tlsKeyFile string) *Server {
-func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile string, tlsKeyFile string, projects *gardenauth.Projects) *http.Server {
+func NewServer(
+	v *auth.Auth,
+	p *database.PostgresConfig,
+	port int,
+	tlsCertFile string,
+	tlsKeyFile string,
+	projects *gardenauth.Projects,
+) *http.Server {
 	backendConf := backendConf{
 		validator:      v,
 		postgres:       p,
 		tokenCache:     gardenauth.NewTokenCache(),
 		generalLimiter: rate.NewLimiter(rate.Every(time.Second)*1000, 1000),
-		tokenLimits:    &tokenLimits{limits: map[string]*tokenLimiter{}, tokenLimit: rate.Every(time.Second) * 100, tokenBurst: 100},
+		tokenLimits: &tokenLimits{
+			limits:     map[string]*tokenLimiter{},
+			tokenLimit: rate.Every(time.Second) * 100,
+			tokenBurst: 100,
+		},
 	}
 
 	projectsPackage = projects
@@ -224,7 +235,12 @@ func newHandleHealth(p *database.PostgresConfig) func(http.ResponseWriter, *http
 func newHandleGroup(backendConf backendConf) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := checkLimit(backendConf.generalLimiter); err != nil {
-			throwError(w, "Too many requests: limiting all incoming requests", "Too Many Requests", http.StatusTooManyRequests)
+			throwError(
+				w,
+				"Too many requests: limiting all incoming requests",
+				"Too Many Requests",
+				http.StatusTooManyRequests,
+			)
 			return
 		}
 
@@ -232,12 +248,22 @@ func newHandleGroup(backendConf backendConf) func(http.ResponseWriter, *http.Req
 		p := backendConf.postgres
 		token, err := v.ExtractToken(r)
 		if err != nil {
-			throwError(w, fmt.Sprintf("Error extracting token: %s", err), "valid token required", http.StatusUnauthorized)
+			throwError(
+				w,
+				fmt.Sprintf("Error extracting token: %s", err),
+				"valid token required",
+				http.StatusUnauthorized,
+			)
 			return
 		}
 
 		if err := backendConf.tokenLimits.checkTokenLimits(*token); err != nil {
-			throwError(w, fmt.Sprintf("The token is rate limited: %s", err), "too Many Requests", http.StatusTooManyRequests)
+			throwError(
+				w,
+				fmt.Sprintf("The token is rate limited: %s", err),
+				"too Many Requests",
+				http.StatusTooManyRequests,
+			)
 			return
 		}
 
@@ -276,7 +302,12 @@ func newHandleGroup(backendConf backendConf) func(http.ResponseWriter, *http.Req
 func newHandleCount(backendConf backendConf) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := checkLimit(backendConf.generalLimiter); err != nil {
-			throwError(w, "Too many requests: limiting all incoming requests", "Too Many Requests", http.StatusTooManyRequests)
+			throwError(
+				w,
+				"Too many requests: limiting all incoming requests",
+				"Too Many Requests",
+				http.StatusTooManyRequests,
+			)
 			return
 		}
 
@@ -284,12 +315,22 @@ func newHandleCount(backendConf backendConf) func(http.ResponseWriter, *http.Req
 		p := backendConf.postgres
 		token, err := v.ExtractToken(r)
 		if err != nil {
-			throwError(w, fmt.Sprintf("Error extracting token: %s", err), "valid token required", http.StatusUnauthorized)
+			throwError(
+				w,
+				fmt.Sprintf("Error extracting token: %s", err),
+				"valid token required",
+				http.StatusUnauthorized,
+			)
 			return
 		}
 
 		if err := backendConf.tokenLimits.checkTokenLimits(*token); err != nil {
-			throwError(w, fmt.Sprintf("The token is rate limited: %s", err), "too Many Requests", http.StatusTooManyRequests)
+			throwError(
+				w,
+				fmt.Sprintf("The token is rate limited: %s", err),
+				"too Many Requests",
+				http.StatusTooManyRequests,
+			)
 			return
 		}
 
@@ -323,7 +364,12 @@ func newHandlePull(backendConf backendConf) func(http.ResponseWriter, *http.Requ
 		startTime := time.Now()
 
 		if err := checkLimit(backendConf.generalLimiter); err != nil {
-			throwError(w, "Too many requests: limiting all incoming requests", "Too Many Requests", http.StatusTooManyRequests)
+			throwError(
+				w,
+				"Too many requests: limiting all incoming requests",
+				"Too Many Requests",
+				http.StatusTooManyRequests,
+			)
 			return
 		}
 
@@ -337,7 +383,12 @@ func newHandlePull(backendConf backendConf) func(http.ResponseWriter, *http.Requ
 		}
 
 		if err := backendConf.tokenLimits.checkTokenLimits(*token); err != nil {
-			throwError(w, fmt.Sprintf("The token is rate limited: %s", err), "too Many Requests", http.StatusTooManyRequests)
+			throwError(
+				w,
+				fmt.Sprintf("The token is rate limited: %s", err),
+				"too Many Requests",
+				http.StatusTooManyRequests,
+			)
 			return
 		}
 
@@ -369,7 +420,19 @@ func newHandlePull(backendConf backendConf) func(http.ResponseWriter, *http.Requ
 			return
 		}
 
-		rows := p.Select(landscape, project, cluster, filter.Limit+1, filter.Offset, filter.Start, filter.End, filter.Rules, filter.Hostnames, filter.Priorities, filter.Ids)
+		rows := p.Select(
+			landscape,
+			project,
+			cluster,
+			filter.Limit+1,
+			filter.Offset,
+			filter.Start,
+			filter.End,
+			filter.Rules,
+			filter.Hostnames,
+			filter.Priorities,
+			filter.Ids,
+		)
 
 		conFilter, err := genContinueFilter(rows, filter)
 		if err != nil {
