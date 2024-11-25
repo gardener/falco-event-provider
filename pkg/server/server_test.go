@@ -161,7 +161,7 @@ func TestGenContinueFilter(t *testing.T) {
 	}
 
 	if conFilter.OffsetId != lastId {
-		t.Errorf("Continue filter offset is not %d but %d", filter.Limit, conFilter.OffsetId)
+		t.Errorf("Continue filter offset id is not %d but %d", lastId, conFilter.OffsetId)
 	}
 
 	if conFilter.OffsetTime.Format(database.ISO8601) != lastTime.Format(database.ISO8601) {

@@ -468,6 +468,10 @@ func genContinueFilter(rows []database.FalcoRow, filter Filter) (json.RawMessage
 		return nil, nil
 	}
 
+	lastRow := rows[len(rows)-1]
+	filter.OffsetId = lastRow.Id
+	filter.OffsetTime = lastRow.Time
+
 	byte_str, err := json.Marshal(filter)
 	if err != nil {
 		return nil, err
