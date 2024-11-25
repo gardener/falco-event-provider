@@ -4,7 +4,7 @@ go 1.23.3
 
 require (
 	github.com/gardener/falco-event-ingestor v0.0.0-20240726144727-25093be7ff7c
-	github.com/gardener/gardener v1.107.0
+	github.com/gardener/gardener v1.108.1
 	github.com/go-logr/logr v1.4.2
 	github.com/gorilla/mux v1.8.1
 	github.com/huandu/go-sqlbuilder v1.32.0
@@ -63,7 +63,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c // indirect
+	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.31.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
@@ -79,7 +79,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.31.2 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240808142205-8e686545bdb8 // indirect
-	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6 // indirect
+	k8s.io/utils v0.0.0-20241104163129-6fe5fd82f078 // indirect
 	sigs.k8s.io/controller-runtime v0.19.1 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
