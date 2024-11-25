@@ -19,6 +19,8 @@ import (
 	"github.com/falco-event-backend/pkg/metrics"
 )
 
+const ISO8601 = "2006-01-02T15:04:05.000000Z"
+
 type PostgresConfig struct {
 	user      string
 	password  string
@@ -30,6 +32,7 @@ type PostgresConfig struct {
 }
 
 type FalcoRow struct {
+	Id           int64           `json:"id"`
 	Landscape    string          `json:"landscape"`
 	Project      string          `json:"project"`
 	Cluster      string          `json:"cluster"`
@@ -118,9 +121,23 @@ func prepareCount(db *sql.DB) (*sql.Stmt, error) {
 	return prepareStatement(db, countStatement)
 }
 
-func buildStatement(landscape string, project string, cluster string, limit int, offset int, start time.Time, end time.Time, rules []string, hostnames []string, priorities []string, ids []string) (string, []interface{}) {
+func buildStatement(
+	landscape string,
+	project string,
+	cluster string,
+	limit int,
+	offsetId int64,
+	offsetTime time.Time,
+	start time.Time,
+	end time.Time,
+	rules []string,
+	hostnames []string,
+	priorities []string,
+	ids []string,
+) (string, []interface{}) {
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	sb.Select("landscape", "project", "cluster", "uuid", "hostname", "time", "rule", "priority", "tags", "source", "message", "output_fields").From("falco_events")
+	sb.Select("id", "landscape", "project", "cluster", "uuid", "hostname", "time", "rule", "priority", "tags", "source", "message", "output_fields").
+		From("falco_events")
 	sb.Where(sb.Equal("landscape", landscape))
 	sb.Where(sb.Equal("project", project))
 
@@ -128,15 +145,24 @@ func buildStatement(landscape string, project string, cluster string, limit int,
 		sb.Where(sb.Equal("cluster", cluster))
 	}
 
-	sb.Limit(limit).Offset(offset)
+	sb.Limit(limit)
 
 	if start.Before(end) {
-		sb.OrderBy("time").Asc()
-		sb.Where(sb.Between("time", start.Format(time.RFC3339), end.Format(time.RFC3339)))
-
+		sb.OrderBy("time asc", "id asc")
+		sb.Where(
+			sb.And(
+				sb.Or(sb.NotEqual("time", offsetTime.Format(ISO8601)), sb.GreaterEqualThan("id", offsetId)),
+				sb.Between("time", offsetTime.Format(ISO8601), end.Format(ISO8601)),
+			),
+		)
 	} else {
-		sb.OrderBy("time").Desc()
-		sb.Where(sb.Between("time", end.Format(time.RFC3339), start.Format(time.RFC3339)))
+		sb.OrderBy("time desc", "id desc")
+		sb.Where(
+			sb.And(
+				sb.Or(sb.NotEqual("time", offsetTime.Format(ISO8601)), sb.LessEqualThan("id", offsetId)),
+				sb.Between("time", end.Format(ISO8601), offsetTime.Format(ISO8601)),
+			),
+		)
 	}
 
 	if len(rules) != 0 {
@@ -163,7 +189,13 @@ func buildStatement(landscape string, project string, cluster string, limit int,
 	return sql, args
 }
 
-func buildGroupStatement(landscape string, project string, cluster string, start time.Time, end time.Time) (string, []interface{}) {
+func buildGroupStatement(
+	landscape string,
+	project string,
+	cluster string,
+	start time.Time,
+	end time.Time,
+) (string, []interface{}) {
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	sb.Select(
 		"landscape", "project", "cluster", "COUNT(*)", "rule", "array_agg(id) ids",
@@ -202,7 +234,13 @@ func buildGroupStatement(landscape string, project string, cluster string, start
 	return sql, args
 }
 
-func (pgconf *PostgresConfig) Group(landscape string, project string, cluster string, start time.Time, end time.Time) []EventGroupRow {
+func (pgconf *PostgresConfig) Group(
+	landscape string,
+	project string,
+	cluster string,
+	start time.Time,
+	end time.Time,
+) []EventGroupRow {
 	log.Debugf("got earlier time start: %v and later time end: %v", start, end)
 
 	// TODO for now ignore time
@@ -227,7 +265,18 @@ func (pgconf *PostgresConfig) Group(landscape string, project string, cluster st
 		var row EventGroupRow
 		var idsUint []uint8
 
-		err = rows.Scan(&row.Landscape, &row.Project, &row.Cluster, &row.Count, &row.Rule, &idsUint, &row.EvtType, &row.ProcName, &row.ProcCmdline, &row.ContainerName)
+		err = rows.Scan(
+			&row.Landscape,
+			&row.Project,
+			&row.Cluster,
+			&row.Count,
+			&row.Rule,
+			&idsUint,
+			&row.EvtType,
+			&row.ProcName,
+			&row.ProcCmdline,
+			&row.ContainerName,
+		)
 
 		if err != nil {
 			// Ignore known error of desired behaviour of replacing NULL with nil
@@ -275,10 +324,36 @@ func (pgconf *PostgresConfig) Count(landscape string) []EventCountRow {
 	return events
 }
 
-func (pgconf *PostgresConfig) Select(landscape string, project string, cluster string, limit int, offset int, start time.Time, end time.Time, rules []string, hostnames []string, priorities []string, ids []string) []FalcoRow {
+func (pgconf *PostgresConfig) Select(
+	landscape string,
+	project string,
+	cluster string,
+	limit int,
+	offsetId int64,
+	offsetTime time.Time,
+	start time.Time,
+	end time.Time,
+	rules []string,
+	hostnames []string,
+	priorities []string,
+	ids []string,
+) []FalcoRow {
 	log.Debugf("got limit: %v and earlier time start: %v and later time end: %v", limit, start, end)
 
-	sql, args := buildStatement(landscape, project, cluster, limit, offset, start, end, rules, hostnames, priorities, ids)
+	sql, args := buildStatement(
+		landscape,
+		project,
+		cluster,
+		limit,
+		offsetId,
+		offsetTime,
+		start,
+		end,
+		rules,
+		hostnames,
+		priorities,
+		ids,
+	)
 
 	startTime := time.Now()
 
@@ -291,7 +366,21 @@ func (pgconf *PostgresConfig) Select(landscape string, project string, cluster s
 
 	for rows.Next() {
 		var row FalcoRow
-		err = rows.Scan(&row.Landscape, &row.Project, &row.Cluster, &row.Uuid, &row.Hostname, &row.Time, &row.Rule, &row.Priority, &row.Tags, &row.Source, &row.Message, &row.OutputFields)
+		err = rows.Scan(
+			&row.Id,
+			&row.Landscape,
+			&row.Project,
+			&row.Cluster,
+			&row.Uuid,
+			&row.Hostname,
+			&row.Time,
+			&row.Rule,
+			&row.Priority,
+			&row.Tags,
+			&row.Source,
+			&row.Message,
+			&row.OutputFields,
+		)
 
 		if err != nil {
 			// Ignore known error of desired behaviour of replacing NULL with nil

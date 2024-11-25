@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -31,7 +32,8 @@ type Filter struct {
 	Start      time.Time `json:"start"`
 	End        time.Time `json:"end"`
 	Limit      int       `json:"limit"`
-	Offset     int       `json:"offset,omitempty"`
+	OffsetId   int64     `json:"offsetId,omitempty"`
+	OffsetTime time.Time `json:"offsetTime,omitempty"`
 	Hostnames  []string  `json:"hostnames,omitempty"`
 	Priorities []string  `json:"priorities,omitempty"`
 	Rules      []string  `json:"rules,omitempty"`
@@ -425,7 +427,8 @@ func newHandlePull(backendConf backendConf) func(http.ResponseWriter, *http.Requ
 			project,
 			cluster,
 			filter.Limit+1,
-			filter.Offset,
+			filter.OffsetId,
+			filter.OffsetTime,
 			filter.Start,
 			filter.End,
 			filter.Rules,
@@ -464,16 +467,17 @@ func genContinueFilter(rows []database.FalcoRow, filter Filter) (json.RawMessage
 	if len(rows) <= filter.Limit {
 		return nil, nil
 	}
-	filter.Offset += filter.Limit
+
 	byte_str, err := json.Marshal(filter)
 	if err != nil {
 		return nil, err
 	}
+
 	return json.RawMessage(byte_str), nil
 }
 
 func newFilter() Filter {
-	return Filter{End: time.Time{}.UTC(), Start: time.Now().UTC(), Limit: 100}
+	return Filter{End: time.Time{}.UTC(), Start: time.Now().UTC(), Limit: 100, OffsetId: 0}
 }
 
 func parseFilter(vals url.Values) (Filter, error) {
@@ -490,10 +494,18 @@ func parseFilter(vals url.Values) (Filter, error) {
 		return filter, err
 	}
 
+	if filter.OffsetId == 0 { // We do not use a continue filter
+		filter.OffsetTime = filter.Start
+		if filter.Start.After(filter.End) {
+			filter.OffsetId = math.MaxInt64
+		}
+	}
+
 	maxLim := 1000
 	if filter.Limit > maxLim {
 		filter.Limit = maxLim
 	}
+
 	return filter, nil
 }
 
