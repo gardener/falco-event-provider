@@ -42,7 +42,6 @@ func TestParseFilter(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error parsing filter: %v", err)
 	}
-	fmt.Println(filter)
 
 	if filter.Limit != limitVal {
 		t.Errorf("Filter limit expected %d but got %d", limitVal, filter.Limit)
