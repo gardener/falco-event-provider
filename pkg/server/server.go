@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -31,7 +32,8 @@ type Filter struct {
 	Start      time.Time `json:"start"`
 	End        time.Time `json:"end"`
 	Limit      int       `json:"limit"`
-	Offset     int       `json:"offset,omitempty"`
+	OffsetId   int64     `json:"offsetId,omitempty"`
+	OffsetTime time.Time `json:"offsetTime,omitempty"`
 	Hostnames  []string  `json:"hostnames,omitempty"`
 	Priorities []string  `json:"priorities,omitempty"`
 	Rules      []string  `json:"rules,omitempty"`
@@ -63,13 +65,24 @@ var (
 )
 
 // func NewServer(v *auth.Auth, p *postgres.PostgresConfig, port int, clusterDailyEventLimit int, tlsCertFile string, tlsKeyFile string) *Server {
-func NewServer(v *auth.Auth, p *database.PostgresConfig, port int, tlsCertFile string, tlsKeyFile string, projects *gardenauth.Projects) *http.Server {
+func NewServer(
+	v *auth.Auth,
+	p *database.PostgresConfig,
+	port int,
+	tlsCertFile string,
+	tlsKeyFile string,
+	projects *gardenauth.Projects,
+) *http.Server {
 	backendConf := backendConf{
 		validator:      v,
 		postgres:       p,
 		tokenCache:     gardenauth.NewTokenCache(),
 		generalLimiter: rate.NewLimiter(rate.Every(time.Second)*1000, 1000),
-		tokenLimits:    &tokenLimits{limits: map[string]*tokenLimiter{}, tokenLimit: rate.Every(time.Second) * 100, tokenBurst: 100},
+		tokenLimits: &tokenLimits{
+			limits:     map[string]*tokenLimiter{},
+			tokenLimit: rate.Every(time.Second) * 100,
+			tokenBurst: 100,
+		},
 	}
 
 	projectsPackage = projects
@@ -224,7 +237,12 @@ func newHandleHealth(p *database.PostgresConfig) func(http.ResponseWriter, *http
 func newHandleGroup(backendConf backendConf) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := checkLimit(backendConf.generalLimiter); err != nil {
-			throwError(w, "Too many requests: limiting all incoming requests", "Too Many Requests", http.StatusTooManyRequests)
+			throwError(
+				w,
+				"Too many requests: limiting all incoming requests",
+				"Too Many Requests",
+				http.StatusTooManyRequests,
+			)
 			return
 		}
 
@@ -232,12 +250,22 @@ func newHandleGroup(backendConf backendConf) func(http.ResponseWriter, *http.Req
 		p := backendConf.postgres
 		token, err := v.ExtractToken(r)
 		if err != nil {
-			throwError(w, fmt.Sprintf("Error extracting token: %s", err), "valid token required", http.StatusUnauthorized)
+			throwError(
+				w,
+				fmt.Sprintf("Error extracting token: %s", err),
+				"valid token required",
+				http.StatusUnauthorized,
+			)
 			return
 		}
 
 		if err := backendConf.tokenLimits.checkTokenLimits(*token); err != nil {
-			throwError(w, fmt.Sprintf("The token is rate limited: %s", err), "too Many Requests", http.StatusTooManyRequests)
+			throwError(
+				w,
+				fmt.Sprintf("The token is rate limited: %s", err),
+				"too Many Requests",
+				http.StatusTooManyRequests,
+			)
 			return
 		}
 
@@ -276,7 +304,12 @@ func newHandleGroup(backendConf backendConf) func(http.ResponseWriter, *http.Req
 func newHandleCount(backendConf backendConf) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := checkLimit(backendConf.generalLimiter); err != nil {
-			throwError(w, "Too many requests: limiting all incoming requests", "Too Many Requests", http.StatusTooManyRequests)
+			throwError(
+				w,
+				"Too many requests: limiting all incoming requests",
+				"Too Many Requests",
+				http.StatusTooManyRequests,
+			)
 			return
 		}
 
@@ -284,12 +317,22 @@ func newHandleCount(backendConf backendConf) func(http.ResponseWriter, *http.Req
 		p := backendConf.postgres
 		token, err := v.ExtractToken(r)
 		if err != nil {
-			throwError(w, fmt.Sprintf("Error extracting token: %s", err), "valid token required", http.StatusUnauthorized)
+			throwError(
+				w,
+				fmt.Sprintf("Error extracting token: %s", err),
+				"valid token required",
+				http.StatusUnauthorized,
+			)
 			return
 		}
 
 		if err := backendConf.tokenLimits.checkTokenLimits(*token); err != nil {
-			throwError(w, fmt.Sprintf("The token is rate limited: %s", err), "too Many Requests", http.StatusTooManyRequests)
+			throwError(
+				w,
+				fmt.Sprintf("The token is rate limited: %s", err),
+				"too Many Requests",
+				http.StatusTooManyRequests,
+			)
 			return
 		}
 
@@ -323,7 +366,12 @@ func newHandlePull(backendConf backendConf) func(http.ResponseWriter, *http.Requ
 		startTime := time.Now()
 
 		if err := checkLimit(backendConf.generalLimiter); err != nil {
-			throwError(w, "Too many requests: limiting all incoming requests", "Too Many Requests", http.StatusTooManyRequests)
+			throwError(
+				w,
+				"Too many requests: limiting all incoming requests",
+				"Too Many Requests",
+				http.StatusTooManyRequests,
+			)
 			return
 		}
 
@@ -337,7 +385,12 @@ func newHandlePull(backendConf backendConf) func(http.ResponseWriter, *http.Requ
 		}
 
 		if err := backendConf.tokenLimits.checkTokenLimits(*token); err != nil {
-			throwError(w, fmt.Sprintf("The token is rate limited: %s", err), "too Many Requests", http.StatusTooManyRequests)
+			throwError(
+				w,
+				fmt.Sprintf("The token is rate limited: %s", err),
+				"too Many Requests",
+				http.StatusTooManyRequests,
+			)
 			return
 		}
 
@@ -369,7 +422,20 @@ func newHandlePull(backendConf backendConf) func(http.ResponseWriter, *http.Requ
 			return
 		}
 
-		rows := p.Select(landscape, project, cluster, filter.Limit+1, filter.Offset, filter.Start, filter.End, filter.Rules, filter.Hostnames, filter.Priorities, filter.Ids)
+		rows := p.Select(
+			landscape,
+			project,
+			cluster,
+			filter.Limit+1,
+			filter.OffsetId,
+			filter.OffsetTime,
+			filter.Start,
+			filter.End,
+			filter.Rules,
+			filter.Hostnames,
+			filter.Priorities,
+			filter.Ids,
+		)
 
 		conFilter, err := genContinueFilter(rows, filter)
 		if err != nil {
@@ -401,16 +467,21 @@ func genContinueFilter(rows []database.FalcoRow, filter Filter) (json.RawMessage
 	if len(rows) <= filter.Limit {
 		return nil, nil
 	}
-	filter.Offset += filter.Limit
+
+	lastRow := rows[len(rows)-1]
+	filter.OffsetId = lastRow.Id
+	filter.OffsetTime = lastRow.Time
+
 	byte_str, err := json.Marshal(filter)
 	if err != nil {
 		return nil, err
 	}
+
 	return json.RawMessage(byte_str), nil
 }
 
 func newFilter() Filter {
-	return Filter{End: time.Time{}.UTC(), Start: time.Now().UTC(), Limit: 100}
+	return Filter{End: time.Time{}.UTC(), Start: time.Now().UTC(), Limit: 100, OffsetId: 0}
 }
 
 func parseFilter(vals url.Values) (Filter, error) {
@@ -427,10 +498,18 @@ func parseFilter(vals url.Values) (Filter, error) {
 		return filter, err
 	}
 
+	if filter.OffsetId == 0 { // We do not use a continue filter
+		filter.OffsetTime = filter.Start
+		if filter.Start.After(filter.End) {
+			filter.OffsetId = math.MaxInt64
+		}
+	}
+
 	maxLim := 1000
 	if filter.Limit > maxLim {
 		filter.Limit = maxLim
 	}
+
 	return filter, nil
 }
 

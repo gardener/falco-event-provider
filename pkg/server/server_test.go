@@ -6,6 +6,7 @@ package server
 
 import (
 	"fmt"
+	"math"
 	"net/url"
 	"testing"
 	"time"
@@ -26,8 +27,14 @@ func TestLandscapeToRegex(t *testing.T) {
 
 func TestParseFilter(t *testing.T) {
 	limitVal := 100
-	offsetVal := 99
-	filterStr := fmt.Sprintf("{\"limit\": %d, \"offset\": %d}", limitVal, offsetVal)
+	offsetId := int64(math.MaxInt64)
+	offsetTime := time.Now().UTC()
+	filterStr := fmt.Sprintf(
+		"{\"limit\": %d, \"offsetId\": %d, \"offsetTime\": \"%s\"}",
+		limitVal,
+		offsetId,
+		offsetTime.Format(database.ISO8601),
+	)
 	urlVals := url.Values{}
 	urlVals.Add("filter", filterStr)
 
@@ -40,8 +47,79 @@ func TestParseFilter(t *testing.T) {
 		t.Errorf("Filter limit expected %d but got %d", limitVal, filter.Limit)
 	}
 
-	if filter.Offset != offsetVal {
-		t.Errorf("Filter offset expected %d but got %d", offsetVal, filter.Offset)
+	if filter.OffsetId != offsetId {
+		t.Errorf("Filter offset expected %d but got %d", offsetId, filter.OffsetId)
+	}
+
+	if filter.OffsetTime.Format(database.ISO8601) != offsetTime.Format(database.ISO8601) {
+		t.Errorf(
+			"Filter offset expected %s but got %s",
+			offsetTime.Format(database.ISO8601),
+			filter.OffsetTime.Format(database.ISO8601),
+		)
+	}
+}
+
+func TestParseFilterNoOffset(t *testing.T) {
+	limitVal := 100
+	filterStr := fmt.Sprintf("{\"limit\": %d}", limitVal)
+	urlVals := url.Values{}
+	urlVals.Add("filter", filterStr)
+
+	filter, err := parseFilter(urlVals)
+	if err != nil {
+		t.Errorf("Error parsing filter: %v", err)
+	}
+
+	if filter.Limit != limitVal {
+		t.Errorf("Filter limit expected %d but got %d", limitVal, filter.Limit)
+	}
+
+	if filter.OffsetId != math.MaxInt64 {
+		t.Errorf("Filter offset expected %d but got %d", math.MaxInt64, filter.OffsetId)
+	}
+
+	if filter.OffsetTime.Format(database.ISO8601) != filter.Start.Format(database.ISO8601) {
+		t.Errorf(
+			"Filter offset expected %s but got %s",
+			filter.Start.Format(database.ISO8601),
+			filter.OffsetTime.Format(database.ISO8601),
+		)
+	}
+}
+
+func TestParseFilterNoOffsetAsc(t *testing.T) {
+	limitVal := 100
+	startTime := time.Time{}
+	endTime := time.Now().UTC()
+	filterStr := fmt.Sprintf(
+		"{\"limit\": %d, \"start\": \"%s\", \"end\": \"%s\"}",
+		limitVal,
+		startTime.Format(database.ISO8601),
+		endTime.Format(database.ISO8601),
+	)
+	urlVals := url.Values{}
+	urlVals.Add("filter", filterStr)
+
+	filter, err := parseFilter(urlVals)
+	if err != nil {
+		t.Errorf("Error parsing filter: %v", err)
+	}
+
+	if filter.Limit != limitVal {
+		t.Errorf("Filter limit expected %d but got %d", limitVal, filter.Limit)
+	}
+
+	if filter.OffsetId != 0 {
+		t.Errorf("Filter offset expected %d but got %d", math.MaxInt64, filter.OffsetId)
+	}
+
+	if filter.OffsetTime.Format(database.ISO8601) != filter.Start.Format(database.ISO8601) {
+		t.Errorf(
+			"Filter offset expected %s but got %s",
+			filter.Start.Format(database.ISO8601),
+			filter.OffsetTime.Format(database.ISO8601),
+		)
 	}
 }
 
@@ -56,8 +134,12 @@ func TestParseFilterError(t *testing.T) {
 }
 
 func TestGenContinueFilter(t *testing.T) {
-	rows := []database.FalcoRow{{}, {}, {}}
+	lastTime := time.Now().UTC()
+	lastId := int64(100)
+	rows := []database.FalcoRow{{}, {}, {Time: lastTime, Id: lastId}}
 	filter := newFilter()
+	filter.Start = time.Time{}
+	filter.End = time.Now().UTC()
 	filter.Limit = 2
 
 	conFilterStr, err := genContinueFilter(rows, filter)
@@ -77,8 +159,16 @@ func TestGenContinueFilter(t *testing.T) {
 		t.Errorf("Continue filter limit is not %d but %d", filter.Limit, conFilter.Limit)
 	}
 
-	if conFilter.Offset != filter.Limit { // Limit becomes new offset
-		t.Errorf("Continue filter offset is not %d but %d", filter.Limit, conFilter.Offset)
+	if conFilter.OffsetId != lastId {
+		t.Errorf("Continue filter offset id is not %d but %d", lastId, conFilter.OffsetId)
+	}
+
+	if conFilter.OffsetTime.Format(database.ISO8601) != lastTime.Format(database.ISO8601) {
+		t.Errorf(
+			"Continue filter offset time is not %s but %s",
+			lastTime.Format(database.ISO8601),
+			conFilter.OffsetTime.Format(database.ISO8601),
+		)
 	}
 }
 

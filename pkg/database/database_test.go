@@ -15,9 +15,10 @@ import (
 func TestBuildStatementEmpty(t *testing.T) {
 	landscape := "landscape-test"
 	project := "project-test"
-	cluster := "cluster-test"
+	cluster := ""
 	limit := 1
-	offset := 1
+	offsetId := int64(0)
+	offsetTime := time.Time{}
 	start := time.Now().UTC()
 	end := time.Time{}
 	rules := []string{}
@@ -25,22 +26,48 @@ func TestBuildStatementEmpty(t *testing.T) {
 	priorities := []string{}
 	ids := []string{}
 
-	sqlStr, args := buildStatement(landscape, project, cluster, limit, offset, start, end, rules, hostnames, priorities, ids)
-	expectedSqlStr := fmt.Sprintf("SELECT landscape, project, cluster, uuid, hostname, time, rule, priority, tags, source, message, output_fields FROM falco_events WHERE landscape = $1 AND project = $2 AND cluster = $3 AND time BETWEEN $4 AND $5 ORDER BY time DESC LIMIT %d OFFSET %d", limit, offset)
+	sqlStr, args := buildStatement(
+		landscape,
+		project,
+		cluster,
+		limit,
+		offsetId,
+		offsetTime,
+		start,
+		end,
+		rules,
+		hostnames,
+		priorities,
+		ids,
+	)
+	expectedSqlStr := fmt.Sprintf(
+		"SELECT id, landscape, project, cluster, uuid, hostname, time, rule, priority, tags, source, message, output_fields FROM falco_events WHERE landscape = $1 AND project = $2 AND ((time <> $3 OR id <= $4) AND time BETWEEN $5 AND $6) ORDER BY time desc, id desc LIMIT %d",
+		limit,
+	)
 	if expectedSqlStr != sqlStr {
 		t.Errorf("Did not get expected sql string\nGOT: %v\nNOT: %v", sqlStr, expectedSqlStr)
 	}
-	if !slices.Equal(args, []interface{}{landscape, project, cluster, end.Format(time.RFC3339), start.Format(time.RFC3339)}) {
-		t.Errorf("Did not get expected args\nGOT: %v\n", args)
+
+	expectedArgs := []interface{}{
+		landscape,
+		project,
+		offsetTime.Format(ISO8601),
+		offsetId,
+		offsetTime.Format(ISO8601),
+		end.Format(ISO8601),
+	}
+	if !slices.Equal(expectedArgs, args) {
+		t.Errorf("Did not get expected args\nGOT: %v\nNOT: %v", args, expectedArgs)
 	}
 }
 
 func TestBuildStatementAscending(t *testing.T) {
 	landscape := "landscape-test"
 	project := "project-test"
-	cluster := "cluster-test"
+	cluster := ""
 	limit := 1
-	offset := 1
+	offsetId := int64(0)
+	offsetTime := time.Time{}
 	start := time.Time{}
 	end := time.Now().UTC()
 	rules := []string{}
@@ -48,13 +75,38 @@ func TestBuildStatementAscending(t *testing.T) {
 	priorities := []string{}
 	ids := []string{}
 
-	sqlStr, args := buildStatement(landscape, project, cluster, limit, offset, start, end, rules, hostnames, priorities, ids)
-	expectedSqlStr := fmt.Sprintf("SELECT landscape, project, cluster, uuid, hostname, time, rule, priority, tags, source, message, output_fields FROM falco_events WHERE landscape = $1 AND project = $2 AND cluster = $3 AND time BETWEEN $4 AND $5 ORDER BY time ASC LIMIT %d OFFSET %d", limit, offset)
+	sqlStr, args := buildStatement(
+		landscape,
+		project,
+		cluster,
+		limit,
+		offsetId,
+		offsetTime,
+		start,
+		end,
+		rules,
+		hostnames,
+		priorities,
+		ids,
+	)
+	expectedSqlStr := fmt.Sprintf(
+		"SELECT id, landscape, project, cluster, uuid, hostname, time, rule, priority, tags, source, message, output_fields FROM falco_events WHERE landscape = $1 AND project = $2 AND ((time <> $3 OR id >= $4) AND time BETWEEN $5 AND $6) ORDER BY time asc, id asc LIMIT %d",
+		limit,
+	)
 	if expectedSqlStr != sqlStr {
 		t.Errorf("Did not get expected sql string\nGOT: %v\nNOT: %v", sqlStr, expectedSqlStr)
 	}
-	if !slices.Equal(args, []interface{}{landscape, project, cluster, start.Format(time.RFC3339), end.Format(time.RFC3339)}) {
-		t.Errorf("Did not get expected args\nGOT: %v\n", args)
+
+	expectedArgs := []interface{}{
+		landscape,
+		project,
+		offsetTime.Format(ISO8601),
+		offsetId,
+		offsetTime.Format(ISO8601),
+		end.Format(ISO8601),
+	}
+	if !slices.Equal(expectedArgs, args) {
+		t.Errorf("Did not get expected args\nGOT: %v\nNOT: %v", args, expectedArgs)
 	}
 }
 
@@ -63,27 +115,52 @@ func TestBuildStatementComplete(t *testing.T) {
 	project := "project-test"
 	cluster := "cluster-test"
 	limit := 1
-	offset := 1
-	start := time.Now().UTC()
-	end := time.Time{}
+	offsetId := int64(100)
+	offsetTime := time.Now().UTC()
+	start := time.Time{}
+	end := time.Now().UTC()
 	rules := []string{"test-rule"}
 	hostnames := []string{"test-host-1", "test-host-2"}
 	priorities := []string{"test-prio-1", "test-prio-2", "test-prio-3"}
 	ids := []string{"1", "2", "3"}
 
-	sqlStr, args := buildStatement(landscape, project, cluster, limit, offset, start, end, rules, hostnames, priorities, ids)
-	expectedSqlStr := fmt.Sprintf("SELECT landscape, project, cluster, uuid, hostname, time, rule, priority, tags, source, message, output_fields FROM falco_events WHERE landscape = $1 AND project = $2 AND cluster = $3 AND time BETWEEN $4 AND $5 AND rule IN ($6) AND hostname IN ($7, $8) AND priority IN ($9, $10, $11) AND id IN ($12, $13, $14) ORDER BY time DESC LIMIT %d OFFSET %d", limit, offset)
+	sqlStr, args := buildStatement(
+		landscape,
+		project,
+		cluster,
+		limit,
+		offsetId,
+		offsetTime,
+		start,
+		end,
+		rules,
+		hostnames,
+		priorities,
+		ids,
+	)
+	expectedSqlStr := fmt.Sprintf(
+		"SELECT id, landscape, project, cluster, uuid, hostname, time, rule, priority, tags, source, message, output_fields FROM falco_events WHERE landscape = $1 AND project = $2 AND cluster = $3 AND ((time <> $4 OR id >= $5) AND time BETWEEN $6 AND $7) AND rule IN ($8) AND hostname IN ($9, $10) AND priority IN ($11, $12, $13) AND id IN ($14, $15, $16) ORDER BY time asc, id asc LIMIT %d",
+		limit,
+	)
 	if expectedSqlStr != sqlStr {
 		t.Errorf("Did not get expected sql string\nGOT: %v\nNOT: %v", sqlStr, expectedSqlStr)
 	}
 
-	expArgs := []interface{}{landscape, project, cluster, end.Format(time.RFC3339), start.Format(time.RFC3339)}
+	expArgs := []interface{}{
+		landscape,
+		project,
+		cluster,
+		offsetTime.Format(ISO8601),
+		offsetId,
+		offsetTime.Format(ISO8601),
+		end.Format(ISO8601),
+	}
 	expArgs = append(expArgs, rules[0])
 	expArgs = append(expArgs, hostnames[0], hostnames[1])
 	expArgs = append(expArgs, priorities[0], priorities[1], priorities[2])
 	expArgs = append(expArgs, ids[0], ids[1], ids[2])
 	if !slices.Equal(args, expArgs) {
-		t.Errorf("Did not get expected args\nGOT: %v\n", args)
+		t.Errorf("Did not get expected args\nGOT: %v\nNOT: %v", args, expArgs)
 	}
 }
 
@@ -92,7 +169,8 @@ func TestBuildStatementTruncateIds(t *testing.T) {
 	project := "project-test"
 	cluster := "cluster-test"
 	limit := 1
-	offset := 1
+	offsetId := int64(100)
+	offsetTime := time.Time{}
 	start := time.Now().UTC()
 	end := time.Time{}
 	rules := []string{}
@@ -100,7 +178,15 @@ func TestBuildStatementTruncateIds(t *testing.T) {
 	priorities := []string{}
 	ids := []string{}
 
-	expArgs := []interface{}{landscape, project, cluster, end.Format(time.RFC3339), start.Format(time.RFC3339)}
+	expArgs := []interface{}{
+		landscape,
+		project,
+		cluster,
+		offsetTime.Format(ISO8601),
+		offsetId,
+		offsetTime.Format(ISO8601),
+		end.Format(ISO8601),
+	}
 	for i := 1; i < 1005; i++ {
 		ids = append(ids, strconv.Itoa(i))
 		if i <= 1001 {
@@ -108,9 +194,21 @@ func TestBuildStatementTruncateIds(t *testing.T) {
 		}
 	}
 
-	_, args := buildStatement(landscape, project, cluster, limit, offset, start, end, rules, hostnames, priorities, ids)
+	_, args := buildStatement(
+		landscape,
+		project,
+		cluster,
+		limit,
+		offsetId,
+		offsetTime,
+		start,
+		end,
+		rules,
+		hostnames,
+		priorities,
+		ids,
+	)
 	if !slices.Equal(args, expArgs) {
-		t.Errorf("Did not get expected args\nGOT: %v\n", expArgs...)
-		t.Errorf("But got args\nGOT: %v\n", args)
+		t.Errorf("Did not get expected args\nGOT: %v\nNOT: %v", args, expArgs)
 	}
 }
