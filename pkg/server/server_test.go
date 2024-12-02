@@ -134,15 +134,17 @@ func TestParseFilterError(t *testing.T) {
 }
 
 func TestGenContinueFilter(t *testing.T) {
+	limit := 100
 	lastTime := time.Now().UTC()
 	lastId := int64(100)
 	rows := []database.FalcoRow{{}, {}, {Time: lastTime, Id: lastId}}
 	filter := newFilter()
 	filter.Start = time.Time{}
 	filter.End = time.Now().UTC()
-	filter.Limit = 2
+	filter.Limit = limit
+	pageSize := 2
 
-	conFilterStr, err := genContinueFilter(rows, filter)
+	conFilterStr, err := genContinueFilter(rows, filter, pageSize)
 	if err != nil {
 		t.Errorf("Could generate continue filter: %s", err)
 	}
@@ -155,8 +157,8 @@ func TestGenContinueFilter(t *testing.T) {
 		t.Errorf("Could not parse continue filter: %s", err)
 	}
 
-	if conFilter.Limit != filter.Limit {
-		t.Errorf("Continue filter limit is not %d but %d", filter.Limit, conFilter.Limit)
+	if conFilter.Limit != limit-pageSize {
+		t.Errorf("Continue filter limit is not %d but %d", limit-pageSize, conFilter.Limit)
 	}
 
 	if conFilter.OffsetId != lastId {
@@ -173,11 +175,13 @@ func TestGenContinueFilter(t *testing.T) {
 }
 
 func TestGenContinueFilterCompletedQuery(t *testing.T) {
+	limit := 100
 	rows := []database.FalcoRow{{}, {}}
 	filter := newFilter()
-	filter.Limit = 2
+	filter.Limit = limit
+	pageSize := 20
 
-	conFilterStr, err := genContinueFilter(rows, filter)
+	conFilterStr, err := genContinueFilter(rows, filter, pageSize)
 	if err != nil {
 		t.Errorf("Could generate continue filter: %s", err)
 	}

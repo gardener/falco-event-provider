@@ -363,7 +363,6 @@ func newHandleCount(backendConf backendConf) func(http.ResponseWriter, *http.Req
 
 func newHandlePull(backendConf backendConf) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		startTime := time.Now()
 
 		if err := checkLimit(backendConf.generalLimiter); err != nil {
 			throwError(
@@ -422,35 +421,10 @@ func newHandlePull(backendConf backendConf) func(http.ResponseWriter, *http.Requ
 			return
 		}
 
-		rows := p.Select(
-			landscape,
-			project,
-			cluster,
-			filter.Limit+1,
-			filter.OffsetId,
-			filter.OffsetTime,
-			filter.Start,
-			filter.End,
-			filter.Rules,
-			filter.Hostnames,
-			filter.Priorities,
-			filter.Ids,
-		)
-
-		conFilter, err := genContinueFilter(rows, filter)
+		output, err := pullEvents(*p, landscape, project, cluster, filter)
 		if err != nil {
-			log.Errorf("Could not generate continue filter: %v", err)
-		}
-
-		output := make(map[string]interface{})
-		if len(rows) <= filter.Limit {
-			output["response"] = rows
-		} else {
-			output["response"] = rows[:filter.Limit]
-		}
-
-		if conFilter != nil {
-			output["continueFilter"] = conFilter
+			log.Errorf("Error pulling events: %v", err)
+			http.Error(w, "error pulling events", http.StatusInternalServerError)
 		}
 
 		w.Header().Add("Content-Type", "application/json")
@@ -458,19 +432,68 @@ func newHandlePull(backendConf backendConf) func(http.ResponseWriter, *http.Requ
 			throwError(w, fmt.Sprintf("Error encoding rows %s", err), "error encoding data", http.StatusBadRequest)
 		}
 
-		queryDone := time.Since(startTime)
-		log.Infof("Returning %d events in %v", len(rows), queryDone)
 	}
 }
 
-func genContinueFilter(rows []database.FalcoRow, filter Filter) (json.RawMessage, error) {
-	if len(rows) <= filter.Limit {
+func pullEvents(pgc database.PostgresConfig, landscape string, project string, cluster string, filter Filter) (map[string]interface{}, error) {
+	startTime := time.Now()
+
+	pageSize := pgc.GetPageSize()
+	moreThanPage := false
+	limit := filter.Limit
+	if limit > pageSize {
+		moreThanPage = true
+		limit = pageSize + 1
+	}
+
+	rows := pgc.Select(
+		landscape,
+		project,
+		cluster,
+		limit,
+		filter.OffsetId,
+		filter.OffsetTime,
+		filter.Start,
+		filter.End,
+		filter.Rules,
+		filter.Hostnames,
+		filter.Priorities,
+		filter.Ids,
+	)
+	queryDone := time.Since(startTime)
+
+	output := make(map[string]interface{})
+
+	if moreThanPage && len(rows) > pageSize {
+		conFilter, err := genContinueFilter(rows, filter, pageSize)
+		if err != nil {
+			log.Errorf("Could not generate continue filter: %v", err)
+			return nil, err
+		}
+
+		rows = rows[:pageSize]
+		output["response"] = rows
+		output["continueFilter"] = conFilter
+
+		log.Infof("Returning %d events in %v", len(rows), queryDone)
+		return output, nil
+	}
+
+	output["response"] = rows
+
+	log.Infof("Returning %d events in %v", len(rows), queryDone)
+	return output, nil
+}
+
+func genContinueFilter(rows []database.FalcoRow, filter Filter, pageSize int) (json.RawMessage, error) {
+	if len(rows) <= pageSize {
 		return nil, nil
 	}
 
 	lastRow := rows[len(rows)-1]
 	filter.OffsetId = lastRow.Id
 	filter.OffsetTime = lastRow.Time
+	filter.Limit = filter.Limit - pageSize
 
 	byte_str, err := json.Marshal(filter)
 	if err != nil {
@@ -481,7 +504,7 @@ func genContinueFilter(rows []database.FalcoRow, filter Filter) (json.RawMessage
 }
 
 func newFilter() Filter {
-	return Filter{End: time.Time{}.UTC(), Start: time.Now().UTC(), Limit: 100, OffsetId: 0}
+	return Filter{End: time.Time{}.UTC(), Start: time.Now().UTC(), Limit: math.MaxInt, OffsetId: 0}
 }
 
 func parseFilter(vals url.Values) (Filter, error) {
@@ -498,16 +521,15 @@ func parseFilter(vals url.Values) (Filter, error) {
 		return filter, err
 	}
 
+	if filter.Limit <= 0 {
+		filter.Limit = math.MaxInt
+	}
+
 	if filter.OffsetId == 0 { // We do not use a continue filter
 		filter.OffsetTime = filter.Start
 		if filter.Start.After(filter.End) {
 			filter.OffsetId = math.MaxInt64
 		}
-	}
-
-	maxLim := 1000
-	if filter.Limit > maxLim {
-		filter.Limit = maxLim
 	}
 
 	return filter, nil
