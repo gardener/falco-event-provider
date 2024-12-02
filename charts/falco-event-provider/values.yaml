@@ -20,6 +20,7 @@ postgres:
   port: 5432
   dbname: falco
   password: ""
+  pageSize: 1000
 
 healthz:
   port: 8000

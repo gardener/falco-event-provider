@@ -27,6 +27,7 @@ type PostgresConfig struct {
 	host      string
 	port      int
 	dbname    string
+	pageSize  int
 	db        *sql.DB
 	stmtCount *sql.Stmt
 }
@@ -68,7 +69,7 @@ type EventGroupRow struct {
 	ContainerName *string  `json:"containername,omitempty"`
 }
 
-func NewPostgresConfig(user, password, host string, port int, dbname string) *PostgresConfig {
+func NewPostgresConfig(user, password, host string, port int, dbname string, pageSize int) *PostgresConfig {
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s", host, port, user, password, dbname)
 	log.Infof("Trying to connect to db: host=%s port=%d user=%s dbname=%s", host, port, user, dbname)
 
@@ -100,6 +101,7 @@ func NewPostgresConfig(user, password, host string, port int, dbname string) *Po
 		port:      port,
 		dbname:    dbname,
 		db:        db,
+		pageSize:  pageSize,
 		stmtCount: stmtCount,
 	}
 }
@@ -394,6 +396,10 @@ func (pgconf *PostgresConfig) Select(
 
 	metrics.RequestsEventHist.Observe(time.Since(startTime).Seconds())
 	return events
+}
+
+func (pgconf *PostgresConfig) GetPageSize() int {
+	return pgconf.pageSize
 }
 
 func (pgconf *PostgresConfig) CheckHealth() error {

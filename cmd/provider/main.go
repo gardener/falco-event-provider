@@ -49,6 +49,7 @@ func initConfig(configFile string, postgresPasswordFile string) (*database.Postg
 		viper.GetString("postgres.host"),
 		viper.GetInt("postgres.port"),
 		viper.GetString("postgres.dbname"),
+		viper.GetInt("postgres.pageSize"),
 	)
 
 	gardenauth.LandscapeConfigInstance = &gardenauth.LandscapeConfig{
