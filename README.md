@@ -31,7 +31,7 @@ An optional `filter` parameter can be provided. The `filter` is a JSON object wi
 
 - `start` start time from which event shall be considered
 - `end` end time from which event shall be considered
-- `limit` number of events to return (maximum 1000)
+- `limit` maximum number of events to return
 - `offset` offset for paginated requests
 - `hostnames` list of Kubernetes node names
 - `priorities` list of Falco priorities
@@ -48,7 +48,7 @@ api/events/v1alpha1/sap-landscape-dev/garden/aws-ha?filter=%7B%22limit%22%3A+1%2
 
 #### Pagination
 
-The `event` endpoint returns the events under the `response` field in the retured JSON object. If not all events could be retured in a single query (due to the total number of remaing events being larger than the `limit`), a `continueFilter` is also retured. This `filter` sets the offset accordingly and can this be used as the filter for a new request to obtain the next page of events. If all events defined by the filter could be retured in a response, no `continueFilter` is provided.
+The `event` endpoint returns the events under the `response` field in the retured JSON object. If not all events could be retured in a single query (due to the number of remaing events being larger than the page size), a `continueFilter` is also retured. This `filter` sets the offset accordingly and can this be used as the filter for a new request to obtain the next page of events. If all events defined by the filter could be retured in a response, no `continueFilter` is provided.
 
 ### Count endpoint
 
