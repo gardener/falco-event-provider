@@ -11,8 +11,7 @@ import (
 	"time"
 
 	"github.com/gardener/gardener/pkg/apis/core/v1beta1"
-	"github.com/gardener/gardener/pkg/logger"
-	"github.com/go-logr/logr"
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -22,16 +21,13 @@ import (
 )
 
 type Projects struct {
-	logger   logr.Logger
 	client   *dynamic.DynamicClient
 	projects map[string]*v1beta1.Project
 	mutex    *sync.Mutex
 }
 
 func NewProjects(client *dynamic.DynamicClient) *Projects {
-	lg, _ := logger.NewZapLogger(logger.InfoLevel, logger.FormatJSON)
 	return &Projects{
-		logger:   lg,
 		client:   client,
 		mutex:    &sync.Mutex{},
 		projects: make(map[string]*v1beta1.Project),
@@ -42,7 +38,7 @@ func (p *Projects) StartProjectWatch() {
 	for {
 		err := p.watch()
 		if err != nil {
-			p.logger.Error(err, "watch on projects failed")
+			log.Errorf("Watch on projects failed: %v", err)
 		}
 		time.Sleep(time.Second)
 	}
@@ -62,14 +58,14 @@ func (p *Projects) watch() error {
 		case watch.Added, watch.Modified:
 			fe, err := p.decodeEvent(event.Object)
 			if err != nil {
-				p.logger.Error(err, "error decoding project event")
+				log.Errorf("Error decoding project event %v", err)
 			} else {
 				p.updateEvent(fe)
 			}
 		case watch.Deleted:
 			fe, err := p.decodeEvent(event.Object)
 			if err != nil {
-				p.logger.Error(err, "error decoding project event")
+				log.Errorf("Error decoding project event %v", err)
 			} else {
 				p.deleteEvent(fe.ObjectMeta.Name)
 			}
@@ -92,14 +88,14 @@ func (p *Projects) deleteEvent(name string) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	delete(p.projects, name)
-	p.logger.Info("project deleted", "name", name)
+	log.Debugf("Project deleted: %v", name)
 }
 
 func (p *Projects) updateEvent(fe *v1beta1.Project) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	p.projects[fe.Name] = fe
-	p.logger.Info("project updated", "name", fe.Name)
+	log.Debugf("Project updated name %v", fe.Name)
 }
 
 func (p *Projects) decodeEvent(obj runtime.Object) (*v1beta1.Project, error) {
