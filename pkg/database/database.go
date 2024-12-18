@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/guregu/null/v5"
 	"github.com/huandu/go-sqlbuilder"
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
@@ -42,7 +43,7 @@ type FalcoRow struct {
 	Time         time.Time       `json:"time"`
 	Rule         string          `json:"rule"`
 	Priority     string          `json:"priority"`
-	Tags         string          `json:"tags"`
+	Tags         null.String     `json:"tags"` // null.String is used to handle NULL for syscall event drop
 	Source       string          `json:"source"`
 	Message      string          `json:"message"`
 	OutputFields json.RawMessage `json:"output_fields,omitempty"`
