@@ -3,7 +3,7 @@ kind: ServiceMonitor
 metadata:
   labels:
     prometheus: garden
-  name: falco-event-provider
+  name: {{ .Values.name }}
   namespace: {{ .Release.Namespace }}
 spec:
   endpoints:
@@ -14,4 +14,4 @@ spec:
   namespaceSelector: {}
   selector:
     matchLabels:
-      app: falco-event-provider
+      app: {{ .Values.name }}
