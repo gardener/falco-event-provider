@@ -4,7 +4,7 @@ go 1.23.3
 
 require (
 	github.com/gardener/falco-event-ingestor v0.0.0-20240726144727-25093be7ff7c
-	github.com/gardener/gardener v1.110.2
+	github.com/gardener/gardener v1.110.4
 	github.com/gorilla/mux v1.8.1
 	github.com/guregu/null/v5 v5.0.0
 	github.com/huandu/go-sqlbuilder v1.33.1
