@@ -365,7 +365,7 @@ func (pgconf *PostgresConfig) Select(
 		log.Errorf("Query failed: %v", err)
 	}
 
-	events := make([]FalcoRow, 0, limit)
+	events := make([]FalcoRow, 0, pgconf.pageSize+1)
 
 	for rows.Next() {
 		var row FalcoRow
