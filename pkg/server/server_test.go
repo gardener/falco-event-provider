@@ -13,8 +13,8 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"github.com/falco-event-backend/pkg/database"
-	"github.com/falco-event-backend/pkg/gardenauth"
+	"github.com/gardener/falco-event-provider/pkg/database"
+	"github.com/gardener/falco-event-provider/pkg/gardenauth"
 )
 
 func TestLandscapeToRegex(t *testing.T) {

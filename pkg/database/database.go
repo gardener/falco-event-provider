@@ -17,7 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 
-	"github.com/falco-event-backend/pkg/metrics"
+	"github.com/gardener/falco-event-provider/pkg/metrics"
 )
 
 const ISO8601 = "2006-01-02T15:04:05.000000Z"
