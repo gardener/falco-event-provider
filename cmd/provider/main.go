@@ -16,9 +16,9 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/falco-event-backend/pkg/database"
-	"github.com/falco-event-backend/pkg/gardenauth"
-	server "github.com/falco-event-backend/pkg/server"
+	"github.com/gardener/falco-event-provider/pkg/database"
+	"github.com/gardener/falco-event-provider/pkg/gardenauth"
+	server "github.com/gardener/falco-event-provider/pkg/server"
 )
 
 var (

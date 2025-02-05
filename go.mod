@@ -1,4 +1,4 @@
-module github.com/falco-event-backend
+module github.com/gardener/falco-event-provider
 
 go 1.23.6
 

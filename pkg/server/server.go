@@ -23,9 +23,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 
-	"github.com/falco-event-backend/pkg/database"
-	"github.com/falco-event-backend/pkg/gardenauth"
-	"github.com/falco-event-backend/pkg/metrics"
+	"github.com/gardener/falco-event-provider/pkg/database"
+	"github.com/gardener/falco-event-provider/pkg/gardenauth"
+	"github.com/gardener/falco-event-provider/pkg/metrics"
 )
 
 type Filter struct {
