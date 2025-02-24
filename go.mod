@@ -7,17 +7,17 @@ require (
 	github.com/gardener/gardener v1.112.0
 	github.com/gorilla/mux v1.8.1
 	github.com/guregu/null/v5 v5.0.0
-	github.com/huandu/go-sqlbuilder v1.33.1
+	github.com/huandu/go-sqlbuilder v1.34.0
 	github.com/lib/pq v1.10.9
-	github.com/prometheus/client_golang v1.20.5
+	github.com/prometheus/client_golang v1.21.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cast v1.7.1
 	github.com/spf13/viper v1.19.0
 	golang.org/x/time v0.10.0
 	golang.org/x/tools v0.30.0
-	k8s.io/api v0.32.1
-	k8s.io/apimachinery v0.32.1
-	k8s.io/client-go v0.32.1
+	k8s.io/api v0.32.2
+	k8s.io/apimachinery v0.32.2
+	k8s.io/client-go v0.32.2
 )
 
 require (
