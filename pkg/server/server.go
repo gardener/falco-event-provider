@@ -564,7 +564,7 @@ func getClusterFromUrl(pathVars map[string]string) (string, error) {
 }
 
 func throwError(w http.ResponseWriter, logError string, httpError string, status int) {
-	log.Errorf(logError)
+	log.Error(logError)
 	http.Error(w, httpError, status)
 }
 
