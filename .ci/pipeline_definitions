@@ -33,7 +33,7 @@ falco-event-provider:
                 availability_requirement: 'low'
     steps:
       verify:
-        image: golang:1.24.0
+        image: golang:1.23.6
   jobs:
     head-update:
       traits:
