@@ -5,7 +5,6 @@
 package database
 
 import (
-	"fmt"
 	"slices"
 	"strconv"
 	"testing"
@@ -40,10 +39,7 @@ func TestBuildStatementEmpty(t *testing.T) {
 		priorities,
 		ids,
 	)
-	expectedSqlStr := fmt.Sprintf(
-		"SELECT id, landscape, project, cluster, uuid, hostname, time, rule, priority, tags, source, message, output_fields FROM falco_events WHERE landscape = $1 AND project = $2 AND ((time <> $3 OR id <= $4) AND time BETWEEN $5 AND $6) ORDER BY time desc, id desc LIMIT %d",
-		limit,
-	)
+	expectedSqlStr := "SELECT id, landscape, project, cluster, uuid, hostname, time, rule, priority, tags, source, message, output_fields FROM falco_events WHERE landscape = $1 AND project = $2 AND ((time <> $3 OR id <= $4) AND time BETWEEN $5 AND $6) ORDER BY time desc, id desc LIMIT $7"
 	if expectedSqlStr != sqlStr {
 		t.Errorf("Did not get expected sql string\nGOT: %v\nNOT: %v", sqlStr, expectedSqlStr)
 	}
@@ -55,7 +51,9 @@ func TestBuildStatementEmpty(t *testing.T) {
 		offsetId,
 		offsetTime.Format(ISO8601),
 		end.Format(ISO8601),
+		limit,
 	}
+
 	if !slices.Equal(expectedArgs, args) {
 		t.Errorf("Did not get expected args\nGOT: %v\nNOT: %v", args, expectedArgs)
 	}
@@ -89,10 +87,7 @@ func TestBuildStatementAscending(t *testing.T) {
 		priorities,
 		ids,
 	)
-	expectedSqlStr := fmt.Sprintf(
-		"SELECT id, landscape, project, cluster, uuid, hostname, time, rule, priority, tags, source, message, output_fields FROM falco_events WHERE landscape = $1 AND project = $2 AND ((time <> $3 OR id >= $4) AND time BETWEEN $5 AND $6) ORDER BY time asc, id asc LIMIT %d",
-		limit,
-	)
+	expectedSqlStr := "SELECT id, landscape, project, cluster, uuid, hostname, time, rule, priority, tags, source, message, output_fields FROM falco_events WHERE landscape = $1 AND project = $2 AND ((time <> $3 OR id >= $4) AND time BETWEEN $5 AND $6) ORDER BY time asc, id asc LIMIT $7"
 	if expectedSqlStr != sqlStr {
 		t.Errorf("Did not get expected sql string\nGOT: %v\nNOT: %v", sqlStr, expectedSqlStr)
 	}
@@ -104,7 +99,9 @@ func TestBuildStatementAscending(t *testing.T) {
 		offsetId,
 		offsetTime.Format(ISO8601),
 		end.Format(ISO8601),
+		limit,
 	}
+
 	if !slices.Equal(expectedArgs, args) {
 		t.Errorf("Did not get expected args\nGOT: %v\nNOT: %v", args, expectedArgs)
 	}
@@ -138,10 +135,8 @@ func TestBuildStatementComplete(t *testing.T) {
 		priorities,
 		ids,
 	)
-	expectedSqlStr := fmt.Sprintf(
-		"SELECT id, landscape, project, cluster, uuid, hostname, time, rule, priority, tags, source, message, output_fields FROM falco_events WHERE landscape = $1 AND project = $2 AND cluster = $3 AND ((time <> $4 OR id >= $5) AND time BETWEEN $6 AND $7) AND rule IN ($8) AND hostname IN ($9, $10) AND priority IN ($11, $12, $13) AND id IN ($14, $15, $16) ORDER BY time asc, id asc LIMIT %d",
-		limit,
-	)
+	expectedSqlStr := "SELECT id, landscape, project, cluster, uuid, hostname, time, rule, priority, tags, source, message, output_fields FROM falco_events WHERE landscape = $1 AND project = $2 AND cluster = $3 AND ((time <> $4 OR id >= $5) AND time BETWEEN $6 AND $7) AND rule IN ($8) AND hostname IN ($9, $10) AND priority IN ($11, $12, $13) AND id IN ($14, $15, $16) ORDER BY time asc, id asc LIMIT $17"
+
 	if expectedSqlStr != sqlStr {
 		t.Errorf("Did not get expected sql string\nGOT: %v\nNOT: %v", sqlStr, expectedSqlStr)
 	}
@@ -155,10 +150,13 @@ func TestBuildStatementComplete(t *testing.T) {
 		offsetTime.Format(ISO8601),
 		end.Format(ISO8601),
 	}
+
 	expArgs = append(expArgs, rules[0])
 	expArgs = append(expArgs, hostnames[0], hostnames[1])
 	expArgs = append(expArgs, priorities[0], priorities[1], priorities[2])
 	expArgs = append(expArgs, ids[0], ids[1], ids[2])
+	expArgs = append(expArgs, limit)
+
 	if !slices.Equal(args, expArgs) {
 		t.Errorf("Did not get expected args\nGOT: %v\nNOT: %v", args, expArgs)
 	}
@@ -187,12 +185,15 @@ func TestBuildStatementTruncateIds(t *testing.T) {
 		offsetTime.Format(ISO8601),
 		end.Format(ISO8601),
 	}
+
 	for i := 1; i < 1005; i++ {
 		ids = append(ids, strconv.Itoa(i))
 		if i <= 1001 {
 			expArgs = append(expArgs, strconv.Itoa(i))
 		}
 	}
+
+	expArgs = append(expArgs, limit)
 
 	_, args := buildStatement(
 		landscape,
@@ -208,6 +209,7 @@ func TestBuildStatementTruncateIds(t *testing.T) {
 		priorities,
 		ids,
 	)
+
 	if !slices.Equal(args, expArgs) {
 		t.Errorf("Did not get expected args\nGOT: %v\nNOT: %v", args, expArgs)
 	}
