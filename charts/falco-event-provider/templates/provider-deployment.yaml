@@ -37,6 +37,8 @@ spec:
         env:
         - name: KUBECONFIG
           value: /etc/falco-event-provider/kubeconfig
+        securityContext:
+          allowPrivilegeEscalation: false
         command:
         - /falco-event-provider
         args:
@@ -79,7 +81,6 @@ spec:
         runAsGroup: 65532
         runAsNonRoot: true
         runAsUser: 65532
-        allowPrivilegeEscalation: false
       terminationGracePeriodSeconds: 30
       volumes:
       - name: service-account-token
