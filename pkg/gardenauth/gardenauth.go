@@ -20,7 +20,7 @@ import (
 
 var (
 	LandscapeConfigInstance *LandscapeConfig
-	TlSConfig               rest.TLSClientConfig
+	TLSConfig               rest.TLSClientConfig
 )
 
 type LandscapeConfig struct {
@@ -99,23 +99,23 @@ func (tokenCache *TokenCache) inTokenCache(token string, landscape string, proje
 	return slices.Contains(projectStore, project)
 }
 
-func CheckPermission(token string, project string, landscape string, projects *Projects, tokenCache *TokenCache) error {
+func CheckPermission(token string, projectName string, landscape string, allProjects *Projects, tokenCache *TokenCache) error {
 
 	if landscape != LandscapeConfigInstance.Name {
 		return fmt.Errorf("landscape %s is not known", landscape)
 	}
 	url := "https://" + LandscapeConfigInstance.DNSName
 
-	if tokenCache.inTokenCache(token, landscape, project) {
+	if tokenCache.inTokenCache(token, landscape, projectName) {
 		log.Info("Token was found in cache")
-		log.Debugf("Token was found in cache: %v", token)
+		log.Debugf("Token was found in cache: ...%s", token[len(token)-5:])
 		return nil
 	}
 
 	config := &rest.Config{
 		// TODO: switch to using cluster DNS.
 		Host:            url,
-		TLSClientConfig: TlSConfig,
+		TLSClientConfig: TLSConfig,
 		BearerToken:     token,
 	}
 
@@ -124,18 +124,20 @@ func CheckPermission(token string, project string, landscape string, projects *P
 		return err
 	}
 
-	var namespace string
-	if project == "" {
-		namespace = "" // If no project provided check ALL namespaces
-	} else if projects != nil {
-		project := projects.GetProject(project)
-		if project == nil {
-			return fmt.Errorf("project %s not found", project)
+	if allProjects == nil {
+		return fmt.Errorf("project information is not available")
+	}
+
+	namespace := ""
+	if projectName != "" {
+		projectObj := allProjects.GetProject(projectName)
+		if projectObj == nil {
+			return fmt.Errorf("project %s not found", projectName)
 		}
-		namespace = *project.Spec.Namespace
-		fmt.Println("got namespace from project object ", namespace)
-	} else {
-		namespace = "garden-" + project
+		if projectObj.Spec.Namespace == nil {
+			return fmt.Errorf("namespace for project %s is not defined", projectName)
+		}
+		namespace = *projectObj.Spec.Namespace
 	}
 
 	action := authv1.ResourceAttributes{
@@ -160,9 +162,9 @@ func CheckPermission(token string, project string, landscape string, projects *P
 	}
 
 	if resp.Status.Allowed {
-		tokenCache.addToTokenCache(token, landscape, project)
+		tokenCache.addToTokenCache(token, landscape, projectName)
 		return nil
 	}
 
-	return fmt.Errorf("token does not allow access for project: %s", project)
+	return fmt.Errorf("token does not allow access for project: %s", projectName)
 }

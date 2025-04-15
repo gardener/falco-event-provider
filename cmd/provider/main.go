@@ -83,7 +83,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Could not build config from flags: %s", err)
 		}
-		gardenauth.TlSConfig = config.TLSClientConfig
+		gardenauth.TLSConfig = config.TLSClientConfig
 		dynamicGardenCluster, err := dynamic.NewForConfig(config)
 		if err != nil {
 			log.Fatalf("Could not create dynamic client from config: %s", err)
