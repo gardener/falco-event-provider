@@ -38,8 +38,8 @@ github.com/gardener/etcd-druid/api v0.30.1 h1:g1XKFi6OFotrQmj/ZppTacuUKq3rGVYBQD
 github.com/gardener/etcd-druid/api v0.30.1/go.mod h1:R9by0d9G/kT8/yA6nY21h4GffQ8j8Uj8hA7mM8JgCmM=
 github.com/gardener/falco-event-ingestor v0.0.0-20250324082207-d7b432afed56 h1:dRZvg7MgSK0XPqak1pjs4ii8uv4W8GL5qocchRLYlxQ=
 github.com/gardener/falco-event-ingestor v0.0.0-20250324082207-d7b432afed56/go.mod h1:c+4vHLomGQzUi2QqQLPISgutOrMGQ57AYFZuKjTmj6o=
-github.com/gardener/gardener v1.120.0 h1:nmcSKnJZFQLBe8/QH/Jy4NKjdvGwzyvL1M5u+ZubiF8=
-github.com/gardener/gardener v1.120.0/go.mod h1:YQCD1SCBKfU+WediftT4y9JFrxbMy7eOqsdGbUgecK4=
+github.com/gardener/gardener v1.120.1 h1:b2YFXAbaPqQvRQJ93c/oL8Uj1ByNhbGo3tvZkfu+t3I=
+github.com/gardener/gardener v1.120.1/go.mod h1:YQCD1SCBKfU+WediftT4y9JFrxbMy7eOqsdGbUgecK4=
 github.com/gardener/machine-controller-manager v0.58.0 h1:JLMpuD+omliu/RwK0mA9Ce+MLObJq421Du1qmaAHmAU=
 github.com/gardener/machine-controller-manager v0.58.0/go.mod h1:TCU/KoudCMt2eV0Jnrq2D1TwgsrBCuhIVgV3j1el6Og=
 github.com/go-logr/logr v1.4.2 h1:6pFjapn8bFcIbiKo3XT4j/BhANplGihG6tvd+8rYgrY=
