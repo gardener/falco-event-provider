@@ -6,7 +6,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -27,7 +26,7 @@ var (
 )
 
 func configureLogging() {
-	log.SetLevel(log.InfoLevel)
+	log.SetLevel(log.DebugLevel)
 }
 
 func initConfig(configFile string, postgresPasswordFile string) (*database.PostgresConfig, *auth.Auth) {
@@ -78,17 +77,20 @@ func main() {
 	var projects *gardenauth.Projects = nil
 	kubeconfig := os.Getenv("KUBECONFIG")
 	if kubeconfig != "" {
-		fmt.Println("Using kubeconfig from env")
+		log.Info("Using kubeconfig from env")
 		config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 		if err != nil {
 			log.Fatalf("Could not build config from flags: %s", err)
 		}
+
 		gardenauth.TLSConfig = config.TLSClientConfig
 		dynamicGardenCluster, err := dynamic.NewForConfig(config)
 		if err != nil {
 			log.Fatalf("Could not create dynamic client from config: %s", err)
 		}
+
 		projects = gardenauth.NewProjects(dynamicGardenCluster)
+		log.Info("Starting projects watch")
 		go projects.StartProjectWatch()
 	}
 
