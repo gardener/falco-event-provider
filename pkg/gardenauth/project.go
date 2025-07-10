@@ -35,6 +35,11 @@ func NewProjects(client *dynamic.DynamicClient) *Projects {
 }
 
 func (p *Projects) StartProjectWatch() {
+	err := p.listProjects()
+	if err != nil {
+		log.Errorf("Initial project list failed: %v", err)
+	}
+
 	for {
 		err := p.watch()
 		if err != nil {
@@ -42,6 +47,27 @@ func (p *Projects) StartProjectWatch() {
 		}
 		time.Sleep(time.Second)
 	}
+}
+
+func (p *Projects) listProjects() error {
+	list, err := p.client.Resource(schema.GroupVersionResource{
+		Group:    "core.gardener.cloud",
+		Version:  "v1beta1",
+		Resource: "projects",
+	}).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, item := range list.Items {
+		var project v1beta1.Project
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &project); err != nil {
+			log.Errorf("Error converting project: %v", err)
+			continue
+		}
+		p.updateEvent(&project)
+	}
+	log.Infof("Loaded %d projects into cache", len(list.Items))
+	return nil
 }
 
 func (p *Projects) watch() error {
