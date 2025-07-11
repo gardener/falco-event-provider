@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    networking.resources.gardener.cloud/to-virtual-istio-ingress-istio-ingressgateway-tcp-9443: allowed
+    networking.resources.gardener.cloud/to-all-istio-ingresses-istio-ingressgateway-tcp-9443: allowed
   labels:
     app: {{ .Values.name }}
   name: {{ .Values.name }}
