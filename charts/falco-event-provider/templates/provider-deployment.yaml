@@ -25,6 +25,7 @@ spec:
         networking.gardener.cloud/to-dns: allowed
         resources.gardener.cloud/managed-by: gardener
         networking.resources.gardener.cloud/to-garden-virtual-garden-kube-apiserver-tcp-443: allowed
+        networking.resources.gardener.cloud/to-all-istio-ingresses-istio-ingressgateway-tcp-9443: allowed
       annotations:
         releaseTime: {{ dateInZone "2006-01-02 15:04:05Z" (now) "UTC"| quote }}
     spec:

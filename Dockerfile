@@ -8,7 +8,7 @@ RUN mkdir -p bin && \
     GOOS=linux GOARCH=amd64 CGO_ENABLED=0 GO111MODULE=on go build -o "bin/falco-event-provider" cmd/provider/main.go
 
 #############      base                                     #############
-FROM gcr.io/distroless/static-debian12:nonroot as base
+FROM gcr.io/distroless/static-debian12:nonroot AS base
 WORKDIR /
 
 #############     falco-event-provider                      #############
