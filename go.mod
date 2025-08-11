@@ -4,7 +4,7 @@ go 1.24.5
 
 require (
 	github.com/gardener/falco-event-ingestor v0.0.0-20250324082207-d7b432afed56
-	github.com/gardener/gardener v1.124.0
+	github.com/gardener/gardener v1.125.0
 	github.com/gorilla/mux v1.8.1
 	github.com/guregu/null/v5 v5.0.0
 	github.com/huandu/go-sqlbuilder v1.36.0
@@ -31,7 +31,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.21.1 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
-	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
@@ -48,7 +48,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.65.0 // indirect
-	github.com/prometheus/procfs v0.16.1 // indirect
+	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/sagikazarmark/locafero v0.8.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
