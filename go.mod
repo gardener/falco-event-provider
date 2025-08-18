@@ -1,6 +1,6 @@
 module github.com/gardener/falco-event-provider
 
-go 1.24.5
+go 1.25.0
 
 require (
 	github.com/gardener/falco-event-ingestor v0.0.0-20250324082207-d7b432afed56
