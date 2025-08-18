@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/gardener/falco-event-ingestor v0.0.0-20250324082207-d7b432afed56
-	github.com/gardener/gardener v1.125.0
+	github.com/gardener/gardener v1.125.1
 	github.com/gorilla/mux v1.8.1
 	github.com/guregu/null/v5 v5.0.0
 	github.com/huandu/go-sqlbuilder v1.36.0
@@ -15,9 +15,9 @@ require (
 	github.com/spf13/viper v1.20.1
 	golang.org/x/time v0.12.0
 	golang.org/x/tools v0.36.0
-	k8s.io/api v0.33.3
-	k8s.io/apimachinery v0.33.3
-	k8s.io/client-go v0.33.3
+	k8s.io/api v0.33.4
+	k8s.io/apimachinery v0.33.4
+	k8s.io/client-go v0.33.4
 )
 
 require (
