@@ -8,4 +8,4 @@ spec:
     kind: Deployment
     name: {{ .Values.name }}
   updatePolicy:
-    updateMode: Auto
+    updateMode: Recreate
