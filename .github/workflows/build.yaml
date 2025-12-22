@@ -51,6 +51,36 @@ jobs:
       oci-platforms: linux/amd64,linux/arm64
       ocm-labels: ${{ toJSON(matrix.args.ocm-labels) }}
 
+  helmcharts:
+    name: Build Helmcharts
+    uses: gardener/cc-utils/.github/workflows/helmchart-ocm.yaml@master
+    needs:
+      - prepare
+      - oci-images
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      matrix:
+        args:
+          - name: falco-event-provider
+            dir: charts/falco-event-provider
+            mappings:
+              - ref: ocm-resource:falco-event-provider.repository
+                attribute: eventProvider.image.repository
+              - ref: ocm-resource:falco-event-provider.tag
+                attribute: eventProvider.image.tag
+          - name: falco-event-provider-virtual
+            dir: charts/falco-event-provider-virtual
+            mappings: []
+    with:
+      name: ${{ matrix.args.name }}
+      dir: ${{ matrix.args.dir }}
+      oci-registry: ${{ needs.prepare.outputs.oci-registry }}
+      oci-repository: charts/gardener
+      ocm-mappings: ${{ toJSON(matrix.args.mappings) }}
+
   verify:
     runs-on: ubuntu-latest
     permissions:
