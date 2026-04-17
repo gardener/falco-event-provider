@@ -1,0 +1,30 @@
+{{- if .Values.ingestor.useIngress }}
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  annotations:
+    cert.gardener.cloud/purpose: managed
+{{- if .Values.ingestor.gardenDNSProvider }}
+    cert.gardener.cloud/class: garden
+    cert.gardener.cloud/dnsrecord-provider-type: {{ .Values.eventProvider.gardenDNSProvider.type }}
+    cert.gardener.cloud/dnsrecord-secret-ref: {{ .Values.eventProvider.gardenDNSProvider.secretRef.namespace }}/{{ .Values.eventProvider.gardenDNSProvider.secretRef.name }}
+    cert.gardener.cloud/dnsrecord-class: garden
+    cert.gardener.cloud/secret-namespace: {{ .Values.eventProvider.istioNamespace }}
+{{- end }}
+  labels:
+    app: {{ .Values.name }}
+  name: {{ .Values.name }}-ingress
+spec:
+  selector:
+{{ toYaml .Values.eventProvider.istioLabels | indent 4 }}
+  servers:
+  - hosts:
+    - {{ .Values.eventProvider.ingressDomain }}
+    port:
+      name: https
+      number: 443
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: tls-provider
+{{- end }}
