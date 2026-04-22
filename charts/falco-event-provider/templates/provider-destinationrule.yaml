@@ -1,4 +1,4 @@
-{{- if .Values.ingestor.useIngress }}
+{{- if .Values.eventProvider.useIngress }}
 apiVersion: networking.istio.io/v1
 kind: DestinationRule
 metadata:
@@ -8,7 +8,7 @@ metadata:
 spec:
   exportTo:
   - '*'
-  host: {{ .Values.name }}.falco-event-storage.svc.cluster.local
+  host: {{ .Values.name }}.{{ .Release.Namespace }}.svc.cluster.local
   trafficPolicy:
     loadBalancer:
       localityLbSetting:

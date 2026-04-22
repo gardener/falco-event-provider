@@ -1,10 +1,10 @@
-{{- if .Values.ingestor.useIngress }}
+{{- if .Values.eventProvider.useIngress }}
 apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
   annotations:
     cert.gardener.cloud/purpose: managed
-{{- if .Values.ingestor.gardenDNSProvider }}
+{{- if .Values.eventProvider.gardenDNSProvider }}
     cert.gardener.cloud/class: garden
     cert.gardener.cloud/dnsrecord-provider-type: {{ .Values.eventProvider.gardenDNSProvider.type }}
     cert.gardener.cloud/dnsrecord-secret-ref: {{ .Values.eventProvider.gardenDNSProvider.secretRef.namespace }}/{{ .Values.eventProvider.gardenDNSProvider.secretRef.name }}

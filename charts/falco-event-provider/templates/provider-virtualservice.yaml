@@ -1,4 +1,4 @@
-{{- if .Values.ingestor.useIngress }}
+{{- if .Values.eventProvider.useIngress }}
 apiVersion: networking.istio.io/v1
 kind: VirtualService
 metadata:
@@ -15,7 +15,7 @@ spec:
   http:
   - route:
     - destination:
-        host: {{ .Values.name }}.falco-event-storage.svc.cluster.local
+        host: {{ .Values.name }}.{{ .Release.Namespace }}.svc.cluster.local
         port:
           number: {{ .Values.eventProvider.port}}
 {{- end }}
