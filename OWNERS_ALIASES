@@ -2,8 +2,6 @@
 
 aliases:
   falco-event-provider-reviewers:
-  - lsroe
   - marwinski
   falco-event-provider-approvers:
-  - lsroe
   - marwinski
