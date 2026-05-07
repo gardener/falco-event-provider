@@ -9,7 +9,7 @@ require (
 	github.com/gardener/gardener/pkg/apis v1.141.1
 	github.com/gorilla/mux v1.8.1
 	github.com/guregu/null/v5 v5.0.0
-	github.com/huandu/go-sqlbuilder v1.40.2
+	github.com/huandu/go-sqlbuilder v1.41.0
 	github.com/lib/pq v1.12.3
 	github.com/prometheus/client_golang v1.23.2
 	github.com/sirupsen/logrus v1.9.4
