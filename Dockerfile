@@ -1,5 +1,5 @@
 #############      builder                                  #############
-FROM golang:1.26.9 AS builder
+FROM golang:1.27.3 AS builder
 
 WORKDIR /go/src/github.com/falco-event-provider
 COPY . .
